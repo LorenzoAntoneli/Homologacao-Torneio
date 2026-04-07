@@ -5,6 +5,8 @@ import logo from './assets/logo.jpg';
 
 export default function TVDisplay() {
   const [matches, setMatches] = useState([]);
+  const [pairs, setPairs] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [victory, setVictory] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
   const [callingMatch, setCallingMatch] = useState(null);
@@ -26,6 +28,9 @@ export default function TVDisplay() {
       const catMap = {}; (cData || []).forEach(c => catMap[c.id] = c);
       const pairMap = {}; (pData || []).forEach(p => pairMap[p.id] = p);
       const courtMap = {}; (coData || []).forEach(c => courtMap[c.id] = c);
+
+      setPairs(pData || []);
+      setCategories(cData || []);
 
       const formatted = (mData || []).map(m => ({
         ...m,
@@ -121,7 +126,7 @@ export default function TVDisplay() {
     let slideTimer;
     if (tvSettings.mode === 'auto') {
       slideTimer = setInterval(() => {
-        setCurrentSlide(prev => (prev + 1) % 5);
+        setCurrentSlide(prev => (prev + 1) % 6);
       }, (tvSettings.time || 30) * 1000);
     } else {
       setCurrentSlide(Number(tvSettings.mode));
@@ -216,7 +221,53 @@ export default function TVDisplay() {
     .filter(m => m.status === 'finished')
     .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
 
+  // Calculate group standings for TV
+  const calculateTVStandings = () => {
+    const result = {};
+    const relevantCatIds = [...new Set(matches.filter(m => m.stage && m.stage.startsWith('Grupo')).map(m => m.category_id))];
+    
+    relevantCatIds.forEach(catId => {
+      const catName = matches.find(m => m.category_id === catId)?.category_name || 'Categoria';
+      const catMatches = matches.filter(m => m.category_id === catId && m.status === 'finished' && m.stage && m.stage.startsWith('Grupo'));
+      const catPairs = pairs.filter(p => p.category_id === catId);
 
+      const stats = {};
+      catPairs.forEach(p => {
+        stats[p.id] = { id: p.id, name: p.name, wins: 0, gp: 0, gc: 0, balance: 0, matches: 0 };
+      });
+
+      catMatches.forEach(m => {
+        if (!stats[m.pair1_id] || !stats[m.pair2_id]) return;
+        stats[m.pair1_id].matches++;
+        stats[m.pair2_id].matches++;
+        stats[m.pair1_id].gp += m.pair1_games;
+        stats[m.pair1_id].gc += m.pair2_games;
+        stats[m.pair2_id].gp += m.pair2_games;
+        stats[m.pair2_id].gc += m.pair1_games;
+        if (m.winner_id) stats[m.winner_id].wins++;
+      });
+
+      Object.values(stats).forEach(s => s.balance = s.gp - s.gc);
+
+      const sorted = Object.values(stats).sort((a, b) => {
+        if (b.wins !== a.wins) return b.wins - a.wins;
+        if (b.balance !== a.balance) return b.balance - a.balance;
+        return b.gp - a.gp;
+      });
+
+      const distinctGroups = [...new Set(matches.filter(m => m.category_id === catId && m.stage && m.stage.startsWith('Grupo')).map(m => m.stage))];
+      const groups = {};
+      distinctGroups.forEach(gName => {
+        const pairIdsInGroup = [...new Set(matches.filter(m => m.stage === gName && m.category_id === catId).flatMap(m => [m.pair1_id, m.pair2_id]))];
+        groups[gName] = sorted.filter(s => pairIdsInGroup.includes(s.id));
+      });
+
+      result[catId] = { name: catName, groups };
+    });
+    return result;
+  };
+
+  const tvStandings = calculateTVStandings();
 
   return (
     <div className="tv-container" style={{ background: '#000', height: '100vh', color: '#fff', padding: '40px 60px', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', fontFamily: 'system-ui, sans-serif' }}>
@@ -231,7 +282,7 @@ export default function TVDisplay() {
               <span style={{ letterSpacing: 5, opacity: 0.5, fontSize: '0.8rem' }}>Torneio em Tempo Real</span>
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#2ecc71', boxShadow: '0 0 10px #2ecc71' }}></div>
               <span style={{ fontSize: '0.6rem', opacity: 0.3, textTransform: 'uppercase' }}>
-                {currentSlide === 0 ? "Geral" : currentSlide === 1 ? "Próximas" : currentSlide === 2 ? "Resultados" : "Patrocinadores"}
+                {currentSlide === 0 ? "Geral" : currentSlide === 1 ? "Próximas" : currentSlide === 2 ? "Resultados" : currentSlide === 3 ? "Patrocinadores" : currentSlide === 4 ? "Chaveamento" : "Grupos"}
               </span>
             </div>
           </div>
@@ -419,6 +470,56 @@ export default function TVDisplay() {
                   );
                })}
             </div>
+          </div>
+        )}
+
+        {/* SLIDE 5: CLASSIFICAÇÃO DOS GRUPOS */}
+        {currentSlide === 5 && (
+          <div className="fade-in" style={{ height: '100%', overflow: 'auto' }}>
+            <h2 style={{ color: 'var(--accent-primary)', fontSize: '2rem', textTransform: 'uppercase', letterSpacing: 6, marginBottom: 30, textAlign: 'center' }}>• Classificação dos Grupos •</h2>
+            
+            {Object.keys(tvStandings).length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 100, opacity: 0.2, fontSize: '2rem' }}>Aguardando fase de grupos...</div>
+            ) : (
+              Object.entries(tvStandings).map(([catId, catData]) => (
+                <div key={catId} style={{ marginBottom: 40 }}>
+                  <h3 style={{ color: 'var(--accent-primary)', fontSize: '1.3rem', textTransform: 'uppercase', letterSpacing: 4, marginBottom: 20, textAlign: 'center' }}>{catData.name}</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
+                    {Object.entries(catData.groups).sort((a, b) => a[0].localeCompare(b[0])).map(([groupName, teams]) => (
+                      <div key={groupName} className="glass-panel" style={{ padding: 20, borderRadius: 20 }}>
+                        <div style={{ fontWeight: 900, color: 'var(--accent-primary)', fontSize: '1rem', marginBottom: 15, textAlign: 'center', letterSpacing: 3 }}>{groupName.toUpperCase()}</div>
+                        <table style={{ width: '100%', fontSize: '0.95rem', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr style={{ opacity: 0.4, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: 2 }}>
+                              <th style={{ textAlign: 'center', padding: '8px 5px', width: 30 }}>#</th>
+                              <th style={{ textAlign: 'left', padding: '8px 5px' }}>Dupla</th>
+                              <th style={{ textAlign: 'center', padding: '8px 5px' }}>V</th>
+                              <th style={{ textAlign: 'center', padding: '8px 5px' }}>Saldo</th>
+                              <th style={{ textAlign: 'center', padding: '8px 5px' }}>GP</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {teams.map((t, idx) => (
+                              <tr key={t.id} style={{ 
+                                borderBottom: '1px solid rgba(255,255,255,0.05)', 
+                                background: idx < 2 ? 'rgba(39,174,96,0.08)' : 'transparent',
+                                transition: 'background 0.3s'
+                              }}>
+                                <td style={{ textAlign: 'center', padding: '12px 5px', fontWeight: 900, color: idx < 2 ? '#27ae60' : '#666', fontSize: '1.1rem' }}>{idx + 1}</td>
+                                <td style={{ padding: '12px 5px', fontWeight: idx < 2 ? 800 : 400, color: idx < 2 ? '#fff' : '#aaa', fontSize: '1rem' }}>{t.name}</td>
+                                <td style={{ textAlign: 'center', padding: '12px 5px', fontWeight: 900, color: 'var(--accent-primary)', fontSize: '1.1rem' }}>{t.wins}</td>
+                                <td style={{ textAlign: 'center', padding: '12px 5px', color: t.balance > 0 ? '#27ae60' : t.balance < 0 ? '#e74c3c' : '#888' }}>{t.balance > 0 ? '+' : ''}{t.balance}</td>
+                                <td style={{ textAlign: 'center', padding: '12px 5px' }}>{t.gp}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         )}
 
