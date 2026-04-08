@@ -137,6 +137,7 @@ export const AdminProvider = ({ children }) => {
 
       const { data: sData, error: sError } = await supabase.from('settings').select('*');
       if (sError) console.warn('Erro ao buscar configurações:', sError.message);
+      // Cache local das configurações globais (keys, tv)
       if (sData) {
         const el = sData.find(s => s.id === 'elevenlabs_key');
         if (el) setElevenKey(el.value);
@@ -151,20 +152,24 @@ export const AdminProvider = ({ children }) => {
           } catch (e) { }
         }
       }
-      if (selectedT && tData) {
-        const currentT = tData.find(t => t.id === selectedT);
-        if (currentT) {
-          setTournamentSettings({
-            max_pairs: currentT.max_pairs ?? 15,
-            num_groups: currentT.num_groups ?? 4,
-            classify_per_group: currentT.classify_per_group ?? 2,
-            ranking_criteria: currentT.ranking_criteria ?? 'wins_balance_pro',
-            bracket_type: currentT.bracket_type ?? 'cross_seed'
-          });
-        }
-      }
     } catch (e) { console.error('Erro no carregamento:', e); }
   };
+
+  // Sincroniza as configurações sempre que o torneio selecionado mudar
+  useEffect(() => {
+    if (selectedT && tournaments.length > 0) {
+      const currentT = tournaments.find(t => t.id === selectedT);
+      if (currentT) {
+        setTournamentSettings({
+          max_pairs: currentT.max_pairs ?? 15,
+          num_groups: currentT.num_groups ?? 4,
+          classify_per_group: currentT.classify_per_group ?? 2,
+          ranking_criteria: currentT.ranking_criteria ?? 'wins_balance_pro',
+          bracket_type: currentT.bracket_type ?? 'cross_seed'
+        });
+      }
+    }
+  }, [selectedT, tournaments]);
 
   const saveTournamentSettings = async () => {
     if (!selectedT) return alert('Selecione um torneio!');
