@@ -80,6 +80,15 @@ export default function TVDisplay() {
     }
   };
 
+  const syncData = () => {
+    if (window.syncTimeout) clearTimeout(window.syncTimeout);
+    window.syncTimeout = setTimeout(() => {
+      loadMatches();
+      loadSponsors();
+      loadSettings();
+    }, 500);
+  };
+
   useEffect(() => {
     loadMatches();
     loadSponsors();
@@ -89,36 +98,27 @@ export default function TVDisplay() {
       setCurrentTime(now);
     }, 10000);
 
-    const ch = supabase.channel('tv_rt').on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, () => {
-      // Carregamento simples passivo (pode não disparar confiavelmente se Replica Identity = default)
-      loadMatches();
-    }).on('postgres_changes', { event: '*', schema: 'public', table: 'sponsors' }, () => {
-      loadSponsors();
-    }).on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, (p) => {
-      if (p.new?.id === 'tv_settings') {
-        try {
-          const parsed = JSON.parse(p.new.value);
-          setTvSettings({ mode: parsed.mode || 'auto', time: parsed.time || 30 });
-        } catch(e) {}
-      }
-    }).on('broadcast', { event: 'tv_settings' }, (p) => {
-      if (p.payload) {
-        setTvSettings({ mode: p.payload.mode || 'auto', time: p.payload.time || 30 });
-      }
-    }).on('broadcast', { event: 'call_match' }, (p) => {
-      if (p.payload && p.payload.match) {
-        const m = p.payload.match;
-        setCallQueue(prev => [...prev, m]);
-      }
-    }).on('broadcast', { event: 'sync_data' }, () => {
-      loadMatches();
-      loadSponsors();
-    }).on('broadcast', { event: 'match_finished' }, (p) => {
-      if (p.payload && p.payload.matchId) {
-        loadMatches(p.payload.matchId);
-      }
-      loadSponsors();
-    }).subscribe();
+    const ch = supabase.channel('tv_rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, syncData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pairs' }, syncData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, syncData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sponsors' }, syncData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, (p) => {
+        if (p.new?.id === 'tv_settings') {
+          try {
+            const parsed = JSON.parse(p.new.value);
+            setTvSettings({ mode: parsed.mode || 'auto', time: parsed.time || 30 });
+          } catch(e) {}
+        }
+      })
+      .on('broadcast', { event: 'sync_data' }, syncData)
+      .on('broadcast', { event: 'call_match' }, (p) => {
+        if (p.payload && p.payload.match) {
+          const m = p.payload.match;
+          setCallQueue(prev => [...prev, m]);
+        }
+      })
+      .subscribe();
 
     return () => { clearInterval(timer); supabase.removeChannel(ch); };
   }, []);

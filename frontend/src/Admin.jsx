@@ -42,6 +42,11 @@ export default function Admin() {
   const [editP2, setEditP2] = useState('');
   const [editCourt, setEditCourt] = useState('');
   const [editTime, setEditTime] = useState('');
+  const [editG1, setEditG1] = useState('');
+  const [editG2, setEditG2] = useState('');
+  const [editT1, setEditT1] = useState('');
+  const [editT2, setEditT2] = useState('');
+  const [editStatus, setEditStatus] = useState('pending');
 
   // Scoreboard Filters
   const [scoreSearch, setScoreSearch] = useState('');
@@ -76,6 +81,16 @@ export default function Admin() {
     return () => { supabase.removeChannel(ch); };
   }, []);
 
+  const notifyTV = () => {
+    if (tvChannel) {
+      tvChannel.send({
+        type: 'broadcast',
+        event: 'sync_data',
+        payload: { ts: Date.now() }
+      });
+    }
+  };
+
   const loadData = async () => {
     try {
       const { data: tData } = await supabase.from('tournaments').select('*').order('created_at', { ascending: false });
@@ -95,7 +110,8 @@ export default function Admin() {
         pair1: pairMap[m.pair1_id],
         pair2: pairMap[m.pair2_id],
         category: catMap[m.category_id],
-        court: courtMap[m.court_id]
+        court: courtMap[m.court_id],
+        category_name: catMap[m.category_id]?.name || 'Geral'
       }));
 
       setMatches(formatted);
@@ -163,9 +179,7 @@ export default function Admin() {
       return alert(error.message);
     }
     
-    if (tvChannel) {
-      tvChannel.send({ type: 'broadcast', event: 'match_finished', payload: { matchId: match.id } });
-    }
+    notifyTV();
 
     // Se possui próxima partida na árvore de mata-mata, sobe o vencedor
     if (match.next_match_id) {
@@ -187,25 +201,25 @@ export default function Admin() {
     if (!newTName) return; 
     const { error } = await supabase.from('tournaments').insert([{ name: newTName }]);
     if (error) alert("Erro ao criar torneio: " + error.message);
-    else { setNewTName(''); loadData(); }
+    else { setNewTName(''); loadData(); notifyTV(); }
   };
   const createCategory = async () => { 
     if (!selectedT || !newCName) return; 
     const { error } = await supabase.from('categories').insert([{ tournament_id: selectedT, name: newCName }]);
     if (error) alert("Erro ao criar categoria: " + error.message);
-    else { setNewCName(''); loadData(); }
+    else { setNewCName(''); loadData(); notifyTV(); }
   };
   const createCourt = async () => { 
     if (!selectedT || !newCourtName) return; 
     const { error } = await supabase.from('courts').insert([{ tournament_id: selectedT, name: newCourtName }]);
     if (error) alert("Erro ao criar quadra: " + error.message);
-    else { setNewCourtName(''); loadData(); }
+    else { setNewCourtName(''); loadData(); notifyTV(); }
   };
   const createSponsor = async () => { 
     if (!newSponsor.name || !newSponsor.logo_url) return; 
     const { error } = await supabase.from('sponsors').insert([newSponsor]);
     if (error) alert("Erro ao criar patrocinador: " + error.message);
-    else { setNewSponsor({ name: '', logo_url: '' }); loadData(); }
+    else { setNewSponsor({ name: '', logo_url: '' }); loadData(); notifyTV(); }
   };
   const saveVoiceKey = async () => {
     if (!voiceKey) return;
@@ -219,13 +233,7 @@ export default function Admin() {
     if (error) {
       alert(error.message);
     } else {
-      if (tvChannel) {
-        tvChannel.send({
-          type: 'broadcast',
-          event: 'tv_settings',
-          payload
-        });
-      }
+      notifyTV();
       alert('✅ Exibição da TV atualizada!');
     }
   };
@@ -258,7 +266,7 @@ export default function Admin() {
     if (!selectedC || !atleta1 || !atleta2) return; 
     const { error } = await supabase.from('pairs').insert([{ category_id: selectedC, name: `${atleta1} / ${atleta2}` }]);
     if (error) alert("Erro ao criar dupla: " + error.message);
-    else { setAtleta1(''); setAtleta2(''); loadData(); }
+    else { setAtleta1(''); setAtleta2(''); loadData(); notifyTV(); }
   };
   const createMatch = async () => { 
     if (!selectedT || !selectedC || !matchP1 || !matchP2) return; 
@@ -275,7 +283,7 @@ export default function Admin() {
     else { 
       loadData(); 
       setActiveTab('scoreboard'); 
-      if (tvChannel) tvChannel.send({ type: 'broadcast', event: 'sync_data' });
+      notifyTV();
     }
   };
 
@@ -284,7 +292,7 @@ export default function Admin() {
     const { error } = await supabase.from('matches').delete().eq('id', id);
     if (error) alert(error.message); else {
       loadData();
-      if (tvChannel) tvChannel.send({ type: 'broadcast', event: 'sync_data' });
+      notifyTV();
     }
   };
 
@@ -294,23 +302,64 @@ export default function Admin() {
     setEditP2(m.pair2_id || '');
     setEditCourt(m.court_id || '');
     setEditTime(m.scheduled_time || '');
+    setEditG1(m.pair1_games !== null ? m.pair1_games : '');
+    setEditG2(m.pair2_games !== null ? m.pair2_games : '');
+    setEditT1(m.pair1_tiebreak || '');
+    setEditT2(m.pair2_tiebreak || '');
+    setEditStatus(m.status || 'pending');
   };
 
   const saveEdit = async () => {
     if (!editingMatch) return;
+
+    let winnerId = null;
+    let g1 = editG1 !== '' ? parseInt(editG1) : null;
+    let g2 = editG2 !== '' ? parseInt(editG2) : null;
+    let t1 = editT1 !== '' ? parseInt(editT1) : 0;
+    let t2 = editT2 !== '' ? parseInt(editT2) : 0;
+
+    if (editStatus === 'finished') {
+       if (g1 === null || g2 === null) return alert('Para encerrar a partida, informe o placar!');
+       if (g1 > g2) winnerId = editP1;
+       else if (g2 > g1) winnerId = editP2;
+       else {
+          // Empate nos games exige tiebreak
+          if (t1 === t2) return alert('Em caso de empate nos games, informe os pontos do tie-break!');
+          winnerId = t1 > t2 ? editP1 : editP2;
+          if (t1 > t2) g1 = 7; else g2 = 7;
+       }
+    }
+
     const { error } = await supabase.from('matches').update({
       pair1_id: editP1 || null,
       pair2_id: editP2 || null,
       court_id: editCourt || null,
       scheduled_time: editTime || null,
+      pair1_games: g1,
+      pair2_games: g2,
+      pair1_tiebreak: t1,
+      pair2_tiebreak: t2,
+      status: editStatus,
+      winner_id: winnerId,
       updated_at: new Date().toISOString()
     }).eq('id', editingMatch.id);
 
     if (error) alert(error.message);
     else {
+      // Se era chaveamento e mudou o vencedor, precisa atualizar o próximo jogo
+      if (winnerId && editingMatch.next_match_id) {
+         const { data: nextMatch } = await supabase.from('matches').select('*').eq('id', editingMatch.next_match_id).single();
+         if (nextMatch) {
+            let updateField = 'pair1_id';
+            // Se o antigo vencedor estava no p2, ou p1 já tá ocupado por outro ID...
+            if (nextMatch.pair1_id && nextMatch.pair1_id !== winnerId) updateField = 'pair2_id';
+            await supabase.from('matches').update({ [updateField]: winnerId }).eq('id', editingMatch.next_match_id);
+         }
+      }
+
       setEditingMatch(null);
       loadData();
-      if (tvChannel) tvChannel.send({ type: 'broadcast', event: 'sync_data' });
+      notifyTV();
     }
   };
 
@@ -353,7 +402,7 @@ export default function Admin() {
       alert('✅ Chave Mata-Mata gerada com sucesso!');
       loadData();
       setActiveTab('scoreboard');
-      if (tvChannel) tvChannel.send({ type: 'broadcast', event: 'sync_data' });
+      notifyTV();
     } catch (e) {
       alert('Erro ao gerar chave: ' + e.message);
     } finally {
@@ -515,6 +564,7 @@ export default function Admin() {
       alert('✅ Mata-Mata Automático Gerado com os Classificados!');
       loadData();
       setActiveTab('scoreboard');
+      notifyTV();
     } catch (e) {
       alert('Erro: ' + e.message);
     } finally {
@@ -579,9 +629,22 @@ export default function Admin() {
       alert('✅ Grupos e Partidas gerados com sucesso!');
       setManualSlots({}); // Limpa os slots após salvar
       setGroupType('auto');
+      notifyTV();
+    }
+  };
+
+  const resetCategoryMatches = async () => {
+    if (!selectedC) return;
+    const cat = categories.find(c => c.id === selectedC);
+    if (!window.confirm(`🚨 ALERTA CRÍTICO: Isso apagará TODOS os jogos e resultados da categoria "${cat?.name}". Esta ação não pode ser desfeita.`)) return;
+    if (!window.confirm(`Tem real certeza de que deseja apagar absolutamente tudo desta categoria?`)) return;
+    
+    const { error } = await supabase.from('matches').delete().eq('category_id', selectedC);
+    if (error) alert(error.message);
+    else {
       loadData();
-      setActiveTab('scoreboard');
-      if (tvChannel) tvChannel.send({ type: 'broadcast', event: 'sync_data' });
+      notifyTV();
+      alert('✅ Categoria resetada com sucesso!');
     }
   };
 
@@ -735,9 +798,14 @@ export default function Admin() {
               {matches.filter(m => m.status === 'finished').map(m => (
                 <div key={m.id} className="app-card" style={{ padding: '15px 20px', borderLeft: '4px solid var(--accent-primary)', marginBottom: 0 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', marginBottom: 12, opacity: 0.6, letterSpacing: 1 }}>
-                    <span style={{ color: 'var(--accent-primary)', fontWeight: 800 }}>{m.stage?.startsWith('Grupo') ? `GRUPO: ${m.stage}` : m.stage?.toUpperCase() || 'AMISTOSO'}</span>
-                    <span>{m.category?.name} • {m.court?.name}</span>
-                    <span>{new Date(m.updated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                       <span style={{ color: 'var(--accent-primary)', fontWeight: 800 }}>{m.stage?.startsWith('Grupo') ? `GRUPO: ${m.stage}` : m.stage?.toUpperCase() || 'AMISTOSO'}</span>
+                       <span>{m.category?.name} • {m.court?.name}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ cursor: 'pointer', color: 'var(--accent-primary)' }} onClick={() => startEdit(m)}><Pencil size={14} /></span>
+                      <span>{new Date(m.updated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -894,8 +962,9 @@ export default function Admin() {
                 </select>
               </div>
 
-                {selectedC && (
-                  <>
+              {selectedC && (
+                <>
+                  {!hasMatches ? (
                     <div style={{ background: 'rgba(255,255,255,0.03)', padding: 20, borderRadius: 15, border: '1px solid #333' }}>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 15, marginBottom: 20 }}>
                         <div style={{ textAlign: 'center', padding: 10, background: 'rgba(255,255,255,0.02)', borderRadius: 10 }}>
@@ -916,86 +985,52 @@ export default function Admin() {
                         <button className="btn-primary" style={{ flex: 1, height: 50, fontSize: '0.8rem', border: '1px solid var(--accent-primary)', background: 'transparent', color: 'var(--accent-primary)' }} onClick={generateGroups}>SORTEIO ALEATÓRIO</button>
                       </div>
                     </div>
-                  </>
-                )}
-              </div>
-
-              {selectedC && (
-                <>
-                  {/* TABELA DE CLASSIFICAÇÃO EM TEMPO REAL */}
-                  <div style={{ marginBottom: 40 }}>
-                    <h2 style={{ fontSize: '1rem', color: '#fff', marginBottom: 20, textAlign: 'center', borderBottom: '1px solid #333', paddingBottom: 10 }}>📊 Tabela de Classificação (Fase de Grupos)</h2>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 15 }}>
-                      {Object.entries(calculateStandings(selectedC)).map(([gName, teams]) => (
-                        <div key={gName} className="app-card" style={{ padding: 10, background: 'rgba(255,255,255,0.02)' }}>
-                          <div style={{ fontWeight: 900, color: 'var(--accent-primary)', fontSize: '0.8rem', marginBottom: 10, textAlign: 'center' }}>{gName}</div>
-                          <table style={{ width: '100%', fontSize: '0.7rem', borderCollapse: 'collapse' }}>
-                            <thead>
-                              <tr style={{ opacity: 0.5, textAlign: 'left' }}>
-                                <th style={{ padding: '5px' }}>Dupla</th>
-                                <th style={{ textAlign: 'center' }}>V</th>
-                                <th style={{ textAlign: 'center' }}>Saldo</th>
-                                <th style={{ textAlign: 'center' }}>GP</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {teams.map((t, idx) => (
-                                <tr key={t.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: idx < (tournamentSettings.classify_per_group || 2) ? 'rgba(39,174,96,0.05)' : 'transparent' }}>
-                                  <td style={{ padding: '8px 5px', fontWeight: idx < (tournamentSettings.classify_per_group || 2) ? 700 : 400 }}>{t.name}</td>
-                                  <td style={{ textAlign: 'center', fontWeight: 900 }}>{t.wins}</td>
-                                  <td style={{ textAlign: 'center' }}>{t.balance}</td>
-                                  <td style={{ textAlign: 'center' }}>{t.gp}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      ))}
+                  ) : (
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                      <button onClick={resetCategoryMatches} style={{ background: 'rgba(255,77,77,0.1)', color: '#ff4d4d', border: '1px solid #ff4d4d', padding: '10px 20px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer' }}>
+                        🔄 RECOMEÇAR / LIMPAR ESTA CATEGORIA
+                      </button>
                     </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {selectedC && hasMatches && (
+              <>
+                {/* TABELA DE CLASSIFICAÇÃO EM TEMPO REAL */}
+                <div style={{ marginBottom: 40, marginTop: 20 }}>
+                  <h2 style={{ fontSize: '1rem', color: '#fff', marginBottom: 20, textAlign: 'center', borderBottom: '1px solid #333', paddingBottom: 10 }}>📊 Tabela de Classificação (Fase de Grupos)</h2>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 15 }}>
+                    {Object.entries(calculateStandings(selectedC)).map(([gName, teams]) => (
+                      <div key={gName} className="app-card" style={{ padding: 10, background: 'rgba(255,255,255,0.02)' }}>
+                        <div style={{ fontWeight: 900, color: 'var(--accent-primary)', fontSize: '0.8rem', marginBottom: 10, textAlign: 'center' }}>{gName}</div>
+                        <table style={{ width: '100%', fontSize: '0.7rem', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr style={{ opacity: 0.5, textAlign: 'left' }}>
+                              <th style={{ padding: '5px' }}>Dupla</th>
+                              <th style={{ textAlign: 'center' }}>V</th>
+                              <th style={{ textAlign: 'center' }}>Saldo</th>
+                              <th style={{ textAlign: 'center' }}>GP</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {teams.map((t, idx) => (
+                              <tr key={t.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: idx < (tournamentSettings.classify_per_group || 2) ? 'rgba(39,174,96,0.05)' : 'transparent' }}>
+                                <td style={{ padding: '8px 5px', fontWeight: idx < (tournamentSettings.classify_per_group || 2) ? 700 : 400 }}>{t.name}</td>
+                                <td style={{ textAlign: 'center', fontWeight: 900 }}>{t.wins}</td>
+                                <td style={{ textAlign: 'center' }}>{t.balance}</td>
+                                <td style={{ textAlign: 'center' }}>{t.gp}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ))}
                   </div>
+                </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20, marginBottom: 40 }}>
-                    {Array.from({ length: tournamentSettings.num_groups }).map((_, gIdx) => {
-                      const letter = String.fromCharCode(65 + gIdx);
-                      const categoryPairs = pairs.filter(p => p.category_id === selectedC);
-                      // Calcula quantos slots mostrar: máximo que cabe dada as duplas OU as regras
-                      const maxSlotsPossible = Math.ceil(tournamentSettings.max_pairs / tournamentSettings.num_groups);
-                      return (
-                        <div key={letter} className="app-card" style={{ border: '1px solid #333', background: 'rgba(0,0,0,0.2)' }}>
-                          <h3 style={{ fontSize: '0.9rem', color: 'var(--accent-primary)', marginBottom: 15, textAlign: 'center', letterSpacing: 2 }}>GRUPO {letter}</h3>
-                          {Array.from({ length: maxSlotsPossible }).map((_, sIdx) => {
-                            const slotNum = sIdx + 1;
-                            const slotKey = `${letter}${slotNum}`;
-                            return (
-                              <div key={slotKey} style={{ marginBottom: 10 }}>
-                                <select 
-                                  value={manualSlots[slotKey] || ''} 
-                                  onChange={e => setManualSlots({...manualSlots, [slotKey]: e.target.value})}
-                                  style={{ fontSize: '0.75rem', padding: '10px' }}
-                                >
-                                  <option value="">-- Slot {slotNum} --</option>
-                                  {categoryPairs.map(p => {
-                                    const isTaken = Object.values(manualSlots).includes(p.id) && manualSlots[slotKey] !== p.id;
-                                    return <option key={p.id} value={p.id} disabled={isTaken}>{p.name} {isTaken ? '(Já escalada)' : ''}</option>
-                                  })}
-                                </select>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                <button 
-                  className="btn-primary" 
-                  style={{ width: '100%', height: 65, marginBottom: 30, fontSize: '1rem', background: '#27ae60', borderColor: '#27ae60', color: '#fff' }} 
-                  onClick={saveGroups}
-                  disabled={isGenerating}
-                >
-                  {isGenerating ? 'CRIANDO JOGOS...' : 'SALVAR GRUPOS E GERAR CONFRONTOS'}
-                </button>
-
+                {/* GERAR MATA-MATA (INTELIGENTE) */}
                 <div style={{ padding: 25, borderRadius: 20, border: '2px solid #D4AF37', background: 'rgba(212,175,55,0.05)', marginBottom: 50 }}>
                   <label className="input-label" style={{ color: '#D4AF37', fontWeight: 900 }}>⚡ GERAR MATA-MATA (INTELIGENTE)</label>
                   <p style={{ fontSize: '0.7rem', opacity: 0.7, marginBottom: 20 }}>Esta opção pegará os classificados da tabela acima e montará as chaves automaticamente.</p>
@@ -1016,6 +1051,51 @@ export default function Admin() {
                     </div>
                   </div>
                 </div>
+              </>
+            )}
+
+            {selectedC && !hasMatches && (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20, marginBottom: 40, marginTop: 40 }}>
+                  {Array.from({ length: tournamentSettings.num_groups }).map((_, gIdx) => {
+                    const letter = String.fromCharCode(65 + gIdx);
+                    const categoryPairs = pairs.filter(p => p.category_id === selectedC);
+                    const maxSlotsPossible = Math.ceil(tournamentSettings.max_pairs / tournamentSettings.num_groups);
+                    return (
+                      <div key={letter} className="app-card" style={{ border: '1px solid #333', background: 'rgba(0,0,0,0.2)' }}>
+                        <h3 style={{ fontSize: '0.9rem', color: 'var(--accent-primary)', marginBottom: 15, textAlign: 'center', letterSpacing: 2 }}>GRUPO {letter}</h3>
+                        {Array.from({ length: maxSlotsPossible }).map((_, sIdx) => {
+                          const slotNum = sIdx + 1;
+                          const slotKey = `${letter}${slotNum}`;
+                          return (
+                            <div key={slotKey} style={{ marginBottom: 10 }}>
+                              <select 
+                                value={manualSlots[slotKey] || ''} 
+                                onChange={e => setManualSlots({...manualSlots, [slotKey]: e.target.value})}
+                                style={{ fontSize: '0.75rem', padding: '10px' }}
+                              >
+                                <option value="">-- Slot {slotNum} --</option>
+                                {categoryPairs.map(p => {
+                                  const isTaken = Object.values(manualSlots).includes(p.id) && manualSlots[slotKey] !== p.id;
+                                  return <option key={p.id} value={p.id} disabled={isTaken}>{p.name} {isTaken ? '(Já escalada)' : ''}</option>
+                                })}
+                              </select>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <button 
+                  className="btn-primary" 
+                  style={{ width: '100%', height: 65, marginBottom: 30, fontSize: '1rem', background: '#27ae60', borderColor: '#27ae60', color: '#fff' }} 
+                  onClick={saveGroups}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? 'CRIANDO JOGOS...' : 'SALVAR GRUPOS E GERAR CONFRONTOS'}
+                </button>
               </>
             )}
           </div>
@@ -1214,6 +1294,30 @@ export default function Admin() {
                   {courts.filter(c => c.tournament_id === editingMatch.tournament_id).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
                 <input type="time" value={editTime} onChange={e => setEditTime(e.target.value)} />
+              </div>
+
+              <div style={{ borderTop: '1px solid #333', marginTop: 20, paddingTop: 20 }}>
+                <label className="input-label">Resultado / Placar</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 15, marginBottom: 15 }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.6rem', opacity: 0.5, marginBottom: 5 }}>DUPLA 1 (Games)</div>
+                    <input type="number" value={editG1} onChange={e => setEditG1(e.target.value)} placeholder="0" style={{ textAlign: 'center', fontSize: '1.2rem', fontWeight: 900 }} />
+                    <div style={{ fontSize: '0.6rem', opacity: 0.5, marginTop: 10 }}>Tie-break</div>
+                    <input type="number" value={editT1} onChange={e => setEditT1(e.target.value)} placeholder="0" style={{ textAlign: 'center', fontSize: '0.9rem' }} />
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.6rem', opacity: 0.5, marginBottom: 5 }}>DUPLA 2 (Games)</div>
+                    <input type="number" value={editG2} onChange={e => setEditG2(e.target.value)} placeholder="0" style={{ textAlign: 'center', fontSize: '1.2rem', fontWeight: 900 }} />
+                    <div style={{ fontSize: '0.6rem', opacity: 0.5, marginTop: 10 }}>Tie-break</div>
+                    <input type="number" value={editT2} onChange={e => setEditT2(e.target.value)} placeholder="0" style={{ textAlign: 'center', fontSize: '0.9rem' }} />
+                  </div>
+                </div>
+
+                <label className="input-label">Status da Partida</label>
+                <select value={editStatus} onChange={e => setEditStatus(e.target.value)}>
+                  <option value="pending">🟡 Pendente / Em Andamento</option>
+                  <option value="finished">🟢 Encerrada / Finalizada</option>
+                </select>
               </div>
 
               <div style={{ display: 'grid', gap: 12, marginTop: 30 }}>
