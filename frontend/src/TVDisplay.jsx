@@ -21,11 +21,13 @@ export default function TVDisplay() {
 
   const loadMatches = async (finishId = null) => {
     try {
+      const { data: tData } = await supabase.from('tournaments').select('*');
       const { data: cData } = await supabase.from('categories').select('*');
       const { data: pData } = await supabase.from('pairs').select('*');
       const { data: coData } = await supabase.from('courts').select('*');
       const { data: mData } = await supabase.from('matches').select('*').order('scheduled_time', { ascending: true });
 
+      const tournMap = {}; (tData || []).forEach(t => tournMap[t.id] = t);
       const catMap = {}; (cData || []).forEach(c => catMap[c.id] = c);
       const pairMap = {}; (pData || []).forEach(p => pairMap[p.id] = p);
       const courtMap = {}; (coData || []).forEach(c => courtMap[c.id] = c);
@@ -39,7 +41,8 @@ export default function TVDisplay() {
         pair2_name: pairMap[m.pair2_id]?.name || '?',
         winner_name: pairMap[m.winner_id]?.name || '?',
         category_name: catMap[m.category_id]?.name || 'Geral',
-        court_name: courtMap[m.court_id]?.name || 'A definir'
+        court_name: courtMap[m.court_id]?.name || 'A definir',
+        tournament_name: tournMap[m.tournament_id]?.name || 'Torneio'
       }));
 
       setMatches(formatted);
@@ -50,10 +53,12 @@ export default function TVDisplay() {
           setVictory({
             winner: winningMatch.winner_name,
             category: winningMatch.category_name,
+            tournament: winningMatch.tournament_name,
+            isFinal: winningMatch.stage === 'Final',
             score: `${winningMatch.pair1_games}/${winningMatch.pair2_games}` +
               (winningMatch.pair1_tiebreak || winningMatch.pair2_tiebreak ? ` (${winningMatch.pair1_tiebreak}-${winningMatch.pair2_tiebreak})` : '')
           });
-          setTimeout(() => setVictory(null), 12000);
+          setTimeout(() => setVictory(null), winningMatch.stage === 'Final' ? 20000 : 12000);
         }
       }
     } catch (e) { console.error('Erro TV:', e); }
@@ -584,14 +589,42 @@ export default function TVDisplay() {
         </div>
       )}
 
-      {/* OVERLAY: Vitória */}
+      {/* OVERLAY: Vitória Normal ou Grande Final */}
       {victory && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 21000, backdropFilter: 'blur(20px)' }}>
-          <div style={{ textAlign: 'center' }}>
-            <Trophy size={180} color="var(--accent-primary)" style={{ marginBottom: 30 }} />
-            <h3 style={{ fontSize: '1.5rem', color: '#fff', letterSpacing: 5, opacity: 0.6 }}>{victory.category.toUpperCase()}</h3>
-            <h1 style={{ fontSize: '7rem', fontWeight: 950, color: '#fff', margin: '20px 0' }}>{victory.winner}</h1>
-            <div style={{ fontSize: '2.5rem', color: 'var(--accent-primary)', fontWeight: '900' }}>{victory.score} • VENCEU A PARTIDA! 🏆🎾</div>
+        <div style={{ 
+          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', 
+          background: victory.isFinal ? 'linear-gradient(135deg, #000 0%, #1a1a1a 100%)' : '#000', 
+          display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 21000, 
+          backdropFilter: 'blur(20px)' 
+        }}>
+          {/* Luzes de fundo para a Final */}
+          {victory.isFinal && (
+            <div style={{ position: 'absolute', width: '100%', height: '100%', overflow: 'hidden', zIndex: -1 }}>
+               <div style={{ position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%', background: 'radial-gradient(circle, rgba(212,175,55,0.15) 0%, transparent 70%)', animation: 'rotate 10s linear infinite' }}></div>
+            </div>
+          )}
+
+          <div style={{ textAlign: 'center', padding: '0 40px' }}>
+            {victory.isFinal ? (
+              <>
+                <img src={logo} alt="Logo" style={{ height: 120, marginBottom: 30, animation: 'pulse 2s infinite' }} />
+                <h3 style={{ fontSize: '1.8rem', color: 'var(--accent-primary)', letterSpacing: 10, fontWeight: 900, textTransform: 'uppercase', marginBottom: 10 }}>GRANDE CAMPEÃO</h3>
+                <h4 style={{ fontSize: '1.2rem', color: '#fff', opacity: 0.6, letterSpacing: 5, marginBottom: 30 }}>{victory.tournament.toUpperCase()} • {victory.category.toUpperCase()}</h4>
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                   <Trophy size={180} color="#D4AF37" style={{ marginBottom: 30, filter: 'drop-shadow(0 0 30px rgba(212,175,55,0.5))' }} />
+                   <div style={{ position: 'absolute', top: -20, right: -20, animation: 'bounce 1s infinite' }}><Star size={60} color="#D4AF37" fill="#D4AF37" /></div>
+                </div>
+                <h1 style={{ fontSize: '8.5rem', fontWeight: 950, color: '#fff', margin: '10px 0', textShadow: '0 0 40px rgba(255,255,255,0.3)' }}>{victory.winner}</h1>
+                <div style={{ fontSize: '3rem', color: 'var(--accent-primary)', fontWeight: '900', letterSpacing: 5 }}>🏆 O TÍTULO É DE VOCÊS! 🏆</div>
+              </>
+            ) : (
+              <>
+                <Trophy size={160} color="var(--accent-primary)" style={{ marginBottom: 30 }} />
+                <h3 style={{ fontSize: '1.5rem', color: '#fff', letterSpacing: 5, opacity: 0.6 }}>{victory.category.toUpperCase()}</h3>
+                <h1 style={{ fontSize: '7rem', fontWeight: 950, color: '#fff', margin: '20px 0' }}>{victory.winner}</h1>
+                <div style={{ fontSize: '2.5rem', color: 'var(--accent-primary)', fontWeight: '900' }}>{victory.score} • VENCEU A PARTIDA! 🎾</div>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -619,6 +652,8 @@ export default function TVDisplay() {
         .ticker-item { display: flex; align-items: center; gap: 15px; margin-right: 30px; background: rgba(255,255,255,0.95); padding: 10px 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(212,175,55,0.15); min-width: 220px; justify-content: center; height: 80px; }
         .ticker-item img { height: 100%; width: auto; max-width: 180px; object-fit: contain; }
         
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
         @keyframes scroll-ticker {
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }
