@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { supabase } from './supabase';
 import { Trophy, Clock, MapPin, Star } from 'lucide-react';
 import logo from './assets/logo.jpg';
@@ -122,6 +122,59 @@ export default function TVDisplay() {
 
     return () => { clearInterval(timer); supabase.removeChannel(ch); };
   }, []);
+
+  const activeMatches = matches.filter(m => m.status !== 'finished');
+  const categoriesPresent = [...new Set(activeMatches.map(m => m.category_name))];
+  const lastResults = matches
+    .filter(m => m.status === 'finished')
+    .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+
+  // Calculate group standings for TV
+  const calculateTVStandings = () => {
+    const result = {};
+    const relevantCatIds = [...new Set(matches.filter(m => m && m.stage?.startsWith('Grupo')).map(m => m.category_id))];
+    
+    relevantCatIds.forEach(catId => {
+      const catName = matches.find(m => m && m.category_id === catId)?.category_name || 'Categoria';
+      const catMatches = matches.filter(m => m && m.category_id === catId && m.status === 'finished' && m.stage?.startsWith('Grupo'));
+      const catPairs = pairs.filter(p => p && p.category_id === catId);
+
+      const stats = {};
+      catPairs.forEach(p => {
+        stats[p.id] = { id: p.id, name: p.name, wins: 0, gp: 0, gc: 0, balance: 0, matches: 0 };
+      });
+
+      catMatches.forEach(m => {
+        if (!m || !stats[m.pair1_id] || !stats[m.pair2_id]) return;
+        stats[m.pair1_id].matches++;
+        stats[m.pair2_id].matches++;
+        stats[m.pair1_id].gp += m.pair1_games;
+        stats[m.pair1_id].gc += m.pair2_games;
+        stats[m.pair2_id].gp += m.pair2_games;
+        stats[m.pair2_id].gc += m.pair1_games;
+        if (m.winner_id) stats[m.winner_id].wins++;
+      });
+
+      Object.values(stats).forEach(s => s.balance = s.gp - s.gc);
+
+      const sorted = Object.values(stats).sort((a, b) => {
+        if (b.wins !== a.wins) return b.wins - a.wins;
+        if (b.balance !== a.balance) return b.balance - a.balance;
+        return b.gp - a.gp;
+      });
+
+      const distinctGroups = [...new Set(matches.filter(m => m && m.category_id === catId && m.stage?.startsWith('Grupo')).map(m => m.stage))];
+      const groups = {};
+      distinctGroups.forEach(gName => {
+        if (!gName) return;
+        const pairIdsInGroup = [...new Set(matches.filter(m => m && m.stage === gName && m.category_id === catId).flatMap(m => [m.pair1_id, m.pair2_id]))];
+        groups[gName] = sorted.filter(s => s && pairIdsInGroup.includes(s.id));
+      });
+
+      result[catId] = { name: catName, groups };
+    });
+    return result;
+  };
 
   // 1. Definição Dinâmica de Slides
   const bracketCatIds = [...new Set(matches.filter(m => m && m.stage && !m.stage?.startsWith('Grupo')).map(m => m.category_id))];
@@ -250,59 +303,6 @@ export default function TVDisplay() {
       setTimeout(() => setCallingMatch(null), 30000);
     }
   }, [callQueue, callingMatch, audioEnabled]);
-
-  const activeMatches = matches.filter(m => m.status !== 'finished');
-  const categoriesPresent = [...new Set(activeMatches.map(m => m.category_name))];
-  const lastResults = matches
-    .filter(m => m.status === 'finished')
-    .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
-
-  // Calculate group standings for TV
-  const calculateTVStandings = () => {
-    const result = {};
-    const relevantCatIds = [...new Set(matches.filter(m => m && m.stage?.startsWith('Grupo')).map(m => m.category_id))];
-    
-    relevantCatIds.forEach(catId => {
-      const catName = matches.find(m => m && m.category_id === catId)?.category_name || 'Categoria';
-      const catMatches = matches.filter(m => m && m.category_id === catId && m.status === 'finished' && m.stage?.startsWith('Grupo'));
-      const catPairs = pairs.filter(p => p && p.category_id === catId);
-
-      const stats = {};
-      catPairs.forEach(p => {
-        stats[p.id] = { id: p.id, name: p.name, wins: 0, gp: 0, gc: 0, balance: 0, matches: 0 };
-      });
-
-      catMatches.forEach(m => {
-        if (!m || !stats[m.pair1_id] || !stats[m.pair2_id]) return;
-        stats[m.pair1_id].matches++;
-        stats[m.pair2_id].matches++;
-        stats[m.pair1_id].gp += m.pair1_games;
-        stats[m.pair1_id].gc += m.pair2_games;
-        stats[m.pair2_id].gp += m.pair2_games;
-        stats[m.pair2_id].gc += m.pair1_games;
-        if (m.winner_id) stats[m.winner_id].wins++;
-      });
-
-      Object.values(stats).forEach(s => s.balance = s.gp - s.gc);
-
-      const sorted = Object.values(stats).sort((a, b) => {
-        if (b.wins !== a.wins) return b.wins - a.wins;
-        if (b.balance !== a.balance) return b.balance - a.balance;
-        return b.gp - a.gp;
-      });
-
-      const distinctGroups = [...new Set(matches.filter(m => m && m.category_id === catId && m.stage?.startsWith('Grupo')).map(m => m.stage))];
-      const groups = {};
-      distinctGroups.forEach(gName => {
-        if (!gName) return;
-        const pairIdsInGroup = [...new Set(matches.filter(m => m && m.stage === gName && m.category_id === catId).flatMap(m => [m.pair1_id, m.pair2_id]))];
-        groups[gName] = sorted.filter(s => s && pairIdsInGroup.includes(s.id));
-      });
-
-      result[catId] = { name: catName, groups };
-    });
-    return result;
-  };
 
   const tvStandings = calculateTVStandings();
 
