@@ -17,6 +17,7 @@ export default function TVDisplay() {
   const [tvSettings, setTvSettings] = useState({ mode: 'auto', time: 30 });
   const [callQueue, setCallQueue] = useState([]);
   const [voiceKey, setVoiceKey] = useState(import.meta.env.VITE_VOICERSS_KEY || '');
+  const [activeBracketIdx, setActiveBracketIdx] = useState(0);
 
   const loadMatches = async (finishId = null) => {
     try {
@@ -215,6 +216,24 @@ export default function TVDisplay() {
     }
   }, [callQueue, callingMatch, audioEnabled]);
 
+  const bracketCatIds = [...new Set(matches.filter(m => m && m.stage && !m.stage?.startsWith('Grupo')).map(m => m.category_id))];
+
+  useEffect(() => {
+    if (activeBracketIdx >= bracketCatIds.length && bracketCatIds.length > 0) {
+      setActiveBracketIdx(0);
+    }
+  }, [bracketCatIds]);
+
+  useEffect(() => {
+    let bracketTimer;
+    if (currentSlide === 4 && bracketCatIds.length > 1) {
+      bracketTimer = setInterval(() => {
+        setActiveBracketIdx(prev => (prev + 1) % bracketCatIds.length);
+      }, 10000);
+    }
+    return () => { if (bracketTimer) clearInterval(bracketTimer); };
+  }, [currentSlide, bracketCatIds.length]);
+
   const activeMatches = matches.filter(m => m.status !== 'finished');
   const categoriesPresent = [...new Set(activeMatches.map(m => m.category_name))];
   const lastResults = matches
@@ -407,18 +426,20 @@ export default function TVDisplay() {
         {/* SLIDE 4: CHAVEAMENTO VISUAL (Árvore Mata-Mata) */}
         {currentSlide === 4 && (
           <div className="fade-in" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <h2 style={{ color: 'var(--accent-primary)', fontSize: '2rem', textTransform: 'uppercase', letterSpacing: 6, marginBottom: 30, textAlign: 'center' }}>• Chaveamento Oficial •</h2>
+            <h2 style={{ color: 'var(--accent-primary)', fontSize: '2rem', textTransform: 'uppercase', letterSpacing: 6, marginBottom: 30, textAlign: 'center' }}>
+              • Chaveamento: {categories.find(c => c.id === bracketCatIds[activeBracketIdx])?.name || 'Oficial'} •
+            </h2>
             
             <div style={{ display: 'flex', gap: 20, justifyContent: 'center', flex: 1, paddingBottom: 40 }}>
                 {['Oitavas de Final', 'Quartas de Final', 'Semifinal', 'Final'].map((round, rIdx) => {
-                  const roundMatches = matches.filter(m => m.stage === round);
+                  const roundMatches = matches.filter(m => m && m.stage === round && m.category_id === bracketCatIds[activeBracketIdx]);
                   if (roundMatches.length === 0) return null;
                   
                   return (
                     <div key={round} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-around', minWidth: 320, position: 'relative' }}>
                        <div style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', fontWeight: 900, textAlign: 'center', marginBottom: 20, letterSpacing: 4, background: 'rgba(0,0,0,0.5)', padding: '5px 0' }}>{round.toUpperCase()}</div>
                        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-around', flex: 1 }}>
-                        {roundMatches.sort((a,b) => a.id.localeCompare(b.id)).map((m, mIdx) => (
+                        {roundMatches.sort((a,b) => (a.id || '').localeCompare(b.id || '')).map((m, mIdx) => (
                           <div key={m.id} style={{ position: 'relative', margin: '15px 0' }}>
                             <div className="glass-panel" style={{ 
                                 padding: '20px 25px', 
@@ -471,6 +492,11 @@ export default function TVDisplay() {
                   );
                })}
             </div>
+            {bracketCatIds.length > 1 && (
+              <div style={{ textAlign: 'center', opacity: 0.3, fontSize: '0.8rem', marginBottom: 10 }}>
+                Mostrando {activeBracketIdx + 1} de {bracketCatIds.length} categorias (rotacionando...)
+              </div>
+            )}
           </div>
         )}
 
