@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import TVDisplay from './TVDisplay';
-import Admin from './Admin';
+import Admin from './admin/AdminRoot';
 import PlayerPortal from './PlayerPortal';
 import './index.css';
 

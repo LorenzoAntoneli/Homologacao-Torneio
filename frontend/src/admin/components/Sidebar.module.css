@@ -1,0 +1,29 @@
+.sidebarLogo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 0;
+  justify-content: center;
+}
+
+.logoImage {
+  width: 200px;
+  height: auto;
+}
+
+.bottomLinks {
+  margin-top: auto;
+}
+
+.navLink {
+  text-decoration: none;
+}
+
+.logoutBtn {
+  color: var(--accent-secondary);
+}
+
+.mobileNav {
+  justify-content: space-around;
+  padding: 0 5px;
+}
