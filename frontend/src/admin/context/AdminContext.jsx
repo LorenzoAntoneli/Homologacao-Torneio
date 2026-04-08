@@ -303,7 +303,7 @@ export const AdminProvider = ({ children }) => {
       createCourt, createSponsor, saveVoiceKey, saveTvSettings, forceCallMatch, deleteSponsor,
       createPair, createMatch, deleteMatch, startEdit, saveEdit, generateManualBracket,
       generateGroups, calculateStandings, generateAutoBracket, saveGroups, resetCategoryMatches,
-      handleFileUpload, executeImport, exportToExcel
+      handleFileUpload, executeImport, exportToExcel, saveTournamentSettings
     }}>
       {children}
     </AdminContext.Provider>
