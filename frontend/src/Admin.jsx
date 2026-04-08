@@ -692,10 +692,17 @@ export default function Admin() {
                   </button>
                 </div>
 
-                <div style={{ textAlign: 'center', marginBottom: 20, display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-                  <span className="cat-badge">{m.category?.name || 'Geral'}</span>
-                  {m.court && <span className="cat-badge" style={{ background: 'rgba(255,255,255,0.05)', color: '#fff' }}>{m.court.name}</span>}
-                  {m.scheduled_time && <span className="cat-badge" style={{ background: 'rgba(255,255,255,0.05)', color: '#fff' }}>{m.scheduled_time}</span>}
+                <div style={{ textAlign: 'center', marginBottom: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+                  {m.stage && (
+                    <div style={{ fontSize: '0.75rem', fontWeight: 950, color: 'var(--accent-primary)', textTransform: 'uppercase', letterSpacing: 3, background: 'rgba(212,175,55,0.1)', padding: '5px 15px', borderRadius: 20 }}>
+                      {m.stage.startsWith('Grupo') ? `Fase de Grupos • ${m.stage}` : m.stage}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <span className="cat-badge" style={{ background: 'rgba(255,255,255,0.08)', color: '#fff' }}>{m.category?.name || 'Geral'}</span>
+                    {m.court && <span className="cat-badge" style={{ background: 'rgba(255,255,255,0.05)', color: '#fff' }}>{m.court.name}</span>}
+                    {m.scheduled_time && <span className="cat-badge" style={{ background: 'rgba(255,255,255,0.05)', color: '#fff' }}>{m.scheduled_time}</span>}
+                  </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 15, marginBottom: 25 }}>
                   <div style={{ flex: 1, textAlign: 'center' }}><div style={{ fontWeight: 800, marginBottom: 10, fontSize: '0.9rem', height: '2rem' }}>{m.pair1?.name}</div><input id={`g1-${m.id}`} type="number" placeholder="0" style={{ width: 80, height: 80, textAlign: 'center', fontSize: '2rem', fontWeight: 900, marginBottom: 0, background: '#1a1a1a', border: '1px solid #333', borderRadius: 12, color: '#fff' }} /></div>
@@ -728,6 +735,7 @@ export default function Admin() {
               {matches.filter(m => m.status === 'finished').map(m => (
                 <div key={m.id} className="app-card" style={{ padding: '15px 20px', borderLeft: '4px solid var(--accent-primary)', marginBottom: 0 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', marginBottom: 12, opacity: 0.6, letterSpacing: 1 }}>
+                    <span style={{ color: 'var(--accent-primary)', fontWeight: 800 }}>{m.stage?.startsWith('Grupo') ? `GRUPO: ${m.stage}` : m.stage?.toUpperCase() || 'AMISTOSO'}</span>
                     <span>{m.category?.name} • {m.court?.name}</span>
                     <span>{new Date(m.updated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
