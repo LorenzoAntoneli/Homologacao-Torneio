@@ -80,10 +80,17 @@ export default function TVDisplay() {
     }
   };
 
-  const syncData = () => {
+  const syncData = (p) => {
+    let finishId = null;
+    if (p && p.payload && p.payload.isFinish) {
+      finishId = p.payload.matchId;
+    } else if (p && p.new && p.new.status === 'finished' && p.old?.status !== 'finished') {
+      finishId = p.new.id;
+    }
+
     if (window.syncTimeout) clearTimeout(window.syncTimeout);
     window.syncTimeout = setTimeout(() => {
-      loadMatches();
+      loadMatches(finishId);
       loadSponsors();
       loadSettings();
     }, 500);
