@@ -241,35 +241,91 @@ export const AdminProvider = ({ children }) => {
   const generateManualBracket = async () => { if (!selectedC || !bracketSize) return alert('Selecione categoria e informe a quantidade de duplas!'); const size = parseInt(bracketSize); if (![4,8,16,32].includes(size)) return alert('Favor utilizar tamanhos padrão: 4, 8, 16 ou 32 para garantir a simetria da chave.'); if (!window.confirm(`Isso gerará uma chave de ${size} duplas (mata-mata). Continuar?`)) return; setIsGenerating(true); try { const { data: finalJoin, error: fError } = await supabase.from('matches').insert([{ tournament_id: selectedT, category_id: selectedC, status: 'pending', stage: 'Final' }]).select().single(); if (fError) throw fError; let currentRoundMatches = [finalJoin]; let matchesPerRound = 2; while (matchesPerRound <= (size / 2)) { const newRoundMatches = []; const stageName = matchesPerRound === 2 ? 'Semifinal' : matchesPerRound === 4 ? 'Quartas de Final' : matchesPerRound === 8 ? 'Oitavas de Final' : `Rodada de ${matchesPerRound*2}`; for (let m of currentRoundMatches) { const { data: parents, error: pError } = await supabase.from('matches').insert([{ tournament_id: selectedT, category_id: selectedC, status: 'pending', stage: stageName, next_match_id: m.id }, { tournament_id: selectedT, category_id: selectedC, status: 'pending', stage: stageName, next_match_id: m.id }]).select(); if (pError) throw pError; newRoundMatches.push(...parents); } currentRoundMatches = newRoundMatches; matchesPerRound *= 2; } alert('✅ Chave Mata-Mata gerada com sucesso!'); await loadData(); setActiveTab('scoreboard'); notifyTV(); } catch (e) { alert('Erro ao gerar chave: ' + e.message); } finally { setIsGenerating(false); } };
   const generateGroups = () => { if (!selectedC) return alert('Selecione uma categoria!'); const categoryPairs = pairs.filter(p => p.category_id === selectedC); if (categoryPairs.length < 2) return alert('Necessário ao menos 2 duplas nesta categoria!'); const { max_pairs, num_groups } = tournamentSettings; const shuffled = [...categoryPairs.slice(0, max_pairs)].sort(() => Math.random() - 0.5); const newSlots = {}; let pairIdx = 0; const baseCount = Math.floor(shuffled.length / num_groups); const extraCount = shuffled.length % num_groups; for (let g = 0; g < num_groups; g++) { const letter = String.fromCharCode(65 + g); const slotsInThisGroup = baseCount + (g < extraCount ? 1 : 0); for (let s = 1; s <= slotsInThisGroup; s++) { if (pairIdx < shuffled.length) { newSlots[`${letter}${s}`] = shuffled[pairIdx].id; pairIdx++; } } } setManualSlots(newSlots); setGroupType('manual'); };
   const calculateStandings = (catId) => { const catMatches = matches.filter(m => m && m.category_id === catId && m.status === 'finished' && m.stage?.startsWith('Grupo')); const catPairs = pairs.filter(p => p && p.category_id === catId); const stats = {}; catPairs.forEach(p => { stats[p.id] = { id: p.id, name: p.name, wins: 0, gp: 0, gc: 0, balance: 0, matches: 0 }; }); catMatches.forEach(m => { if (!stats[m.pair1_id] || !stats[m.pair2_id]) return; stats[m.pair1_id].matches++; stats[m.pair2_id].matches++; stats[m.pair1_id].gp += m.pair1_games; stats[m.pair1_id].gc += m.pair2_games; stats[m.pair2_id].gp += m.pair2_games; stats[m.pair2_id].gc += m.pair1_games; if (m.winner_id) stats[m.winner_id].wins++; }); Object.values(stats).forEach(s => s.balance = s.gp - s.gc); const sorted = Object.values(stats).sort((a, b) => { if (b.wins !== a.wins) return b.wins - a.wins; if (b.balance !== a.balance) return b.balance - a.balance; return b.gp - a.gp; }); const groups = {}; catMatches.forEach(m => { const gName = m.stage; if (gName && !groups[gName]) groups[gName] = []; }); const distinctGroups = [...new Set(matches.filter(m => m && m.category_id === catId && m.stage?.startsWith('Grupo')).map(m => m.stage))]; distinctGroups.forEach(gName => { const pairIdsInGroup = [...new Set(matches.filter(m => m && m.stage === gName && m.category_id === catId).flatMap(m => [m.pair1_id, m.pair2_id]))]; const finalGroups = sorted.filter(s => pairIdsInGroup.includes(s.id)); groups[gName] = finalGroups; }); return groups; };
-  const generateAutoBracket = async () => { if (!selectedC) return alert('Selecione uma categoria!'); const standings = calculateStandings(selectedC); const groups = Object.keys(standings).sort(); if (groups.length === 0) return alert('Não foram encontrados resultados de grupos para esta categoria!'); const qualifiers = []; const nQualify = tournamentSettings.classify_per_group || 2; groups.forEach(gName => { const topPairs = standings[gName].slice(0, nQualify); qualifiers.push(...topPairs); }); const size = qualifiers.length; const bracketSize = size <= 4 ? 4 : size <= 8 ? 8 : 16; if (!window.confirm(`Gerar Mata-Mata automático para ${size} duplas classificadas?`)) return; setIsGenerating(true); try { const mapping = []; if (groups.length === 4 && nQualify === 2) { mapping.push([standings[groups[0]][0], standings[groups[1]][1]]); mapping.push([standings[groups[2]][0], standings[groups[3]][1]]); mapping.push([standings[groups[1]][0], standings[groups[0]][1]]); mapping.push([standings[groups[3]][0], standings[groups[2]][1]]); } else { for (let i = 0; i < groups.length; i++) { const next = (i + 1) % groups.length; mapping.push([standings[groups[i]][0], standings[groups[next]][1]]); } }
-    const { data: finalMatch } = await supabase.from('matches').insert([{ tournament_id: selectedT, category_id: selectedC, stage: 'Final', status: 'pending' }]).select().single();
-    const { data: semis } = await supabase.from('matches').insert([
-      { tournament_id: selectedT, category_id: selectedC, stage: 'Semifinal', status: 'pending', next_match_id: finalMatch.id },
-      { tournament_id: selectedT, category_id: selectedC, stage: 'Semifinal', status: 'pending', next_match_id: finalMatch.id }
-    ]).select();
-    if (mapping.length > 2) {
-      const quartasData = [];
-      mapping.forEach((pairSet, idx) => {
-        quartasData.push({
+  const generateAutoBracket = async () => {
+    if (!selectedC) return alert('Selecione uma categoria!');
+    const standings = calculateStandings(selectedC);
+    const groupNames = Object.keys(standings).sort();
+    if (groupNames.length === 0) return alert('Não foram encontrados resultados de grupos para esta categoria!');
+
+    const nQualify = tournamentSettings.classify_per_group ?? 2;
+    const allQualifiers = [];
+    groupNames.forEach(gName => {
+      const topPairs = standings[gName].slice(0, nQualify);
+      allQualifiers.push(...topPairs.map((p, idx) => ({ ...p, rank: idx + 1, group: gName })));
+    });
+
+    if (allQualifiers.length < 2) return alert('Não há duplas classificadas suficientes!');
+
+    const size = allQualifiers.length;
+    if (!window.confirm(`Gerar Mata-Mata automático para ${size} duplas classificadas?`)) return;
+
+    setIsGenerating(true);
+    try {
+      // Mapeamento dinâmico de confrontos
+      const mapping = [];
+      if (groupNames.length === 1) {
+        // Todas do mesmo grupo: 1x4, 2x3, etc.
+        for (let i = 0; i < Math.floor(size / 2); i++) {
+          mapping.push([allQualifiers[i], allQualifiers[size - 1 - i]]);
+        }
+      } else {
+        // Cruzamento entre grupos (1º de um vs 2º de outro)
+        const firsts = allQualifiers.filter(q => q.rank === 1);
+        const seconds = allQualifiers.filter(q => q.rank === 2);
+        
+        for (let i = 0; i < firsts.length; i++) {
+          const nextIdx = (i + 1) % firsts.length;
+          // Cruza 1º de um grupo com 2º do próximo grupo
+          mapping.push([firsts[i], seconds[nextIdx] || null]);
+        }
+        
+        // Se sobrarem duplas (3ºs, 4ºs), adicionamos conforme a necessidade
+        const others = allQualifiers.filter(q => q.rank > 2);
+        others.forEach((p, idx) => {
+            if (idx % 2 === 0) mapping.push([p, others[idx+1] || null]);
+        });
+      }
+
+      // Cálculo de fases (Final, Semi, Quartas)
+      const matchesNeeded = mapping.length;
+      let stageMatch;
+      
+      if (matchesNeeded <= 2) {
+        const { data: final } = await supabase.from('matches').insert([{ tournament_id: selectedT, category_id: selectedC, stage: 'Final', status: 'pending' }]).select().single();
+        stageMatch = await supabase.from('matches').insert([
+          { tournament_id: selectedT, category_id: selectedC, stage: 'Semifinal', status: 'pending', next_match_id: final.id, pair1_id: mapping[0]?.[0]?.id, pair2_id: mapping[0]?.[1]?.id },
+          { tournament_id: selectedT, category_id: selectedC, stage: 'Semifinal', status: 'pending', next_match_id: final.id, pair1_id: mapping[1]?.[0]?.id, pair2_id: mapping[1]?.[1]?.id }
+        ]).select();
+      } else {
+        // Caso de Quartas de Final
+        const { data: final } = await supabase.from('matches').insert([{ tournament_id: selectedT, category_id: selectedC, stage: 'Final', status: 'pending' }]).select().single();
+        const { data: semis } = await supabase.from('matches').insert([
+          { tournament_id: selectedT, category_id: selectedC, stage: 'Semifinal', status: 'pending', next_match_id: final.id },
+          { tournament_id: selectedT, category_id: selectedC, stage: 'Semifinal', status: 'pending', next_match_id: final.id }
+        ]).select();
+
+        const quartasData = mapping.slice(0, 4).map((pSet, idx) => ({
           tournament_id: selectedT,
           category_id: selectedC,
           stage: 'Quartas de Final',
           status: 'pending',
           next_match_id: idx < 2 ? semis[0].id : semis[1].id,
-          pair1_id: pairSet[0]?.id || null,
-          pair2_id: pairSet[1]?.id || null
-        });
-      });
-      await supabase.from('matches').insert(quartasData);
-    } else {
-      await supabase.from('matches').update({ pair1_id: mapping[0][0]?.id, pair2_id: mapping[0][1]?.id }).eq('id', semis[0].id);
-      await supabase.from('matches').update({ pair1_id: mapping[1][0]?.id, pair2_id: mapping[1][1]?.id }).eq('id', semis[1].id);
-    }
-    alert('✅ Mata-Mata Automático Gerado com os Classificados!');
-    await loadData();
-    setActiveTab('scoreboard');
-    notifyTV();
-  } catch (e) { alert('Erro: ' + e.message); } finally { setIsGenerating(false); } };
+          pair1_id: pSet[0]?.id || null,
+          pair2_id: pSet[1]?.id || null
+        }));
+        await supabase.from('matches').insert(quartasData);
+      }
+
+      alert('✅ Mata-Mata Gerado com os Classificados!');
+      await loadData();
+      setActiveTab('scoreboard');
+      notifyTV();
+    } catch (e) { 
+      alert('Erro: ' + e.message); 
+    } finally { 
+      setIsGenerating(false); 
+    } 
+  };
   const saveGroups = async () => { const categoryPairs = pairs.filter(p => p.category_id === selectedC); const finalGroups = {}; Object.keys(manualSlots).forEach(key => { const letter = key[0]; const pairId = manualSlots[key]; if (pairId) { if (!finalGroups[letter]) finalGroups[letter] = []; const pair = categoryPairs.find(p => p.id === pairId); if (pair) finalGroups[letter].push(pair); } }); const groupsArray = Object.keys(finalGroups).sort().map(letter => ({ name: `Grupo ${letter}`, pairs: finalGroups[letter] })); if (groupsArray.length === 0) return alert('⚠️ Preencha ao menos um grupo com duplas!'); if (!window.confirm('Confirmar a criação das partidas para estes grupos?')) return; setIsGenerating(true); const matchesToCreate = []; groupsArray.forEach(group => { const validPairs = group.pairs.filter(p => p && p.id); for (let i = 0; i < validPairs.length; i++) { for (let j = i + 1; j < validPairs.length; j++) { matchesToCreate.push({ tournament_id: selectedT, category_id: selectedC, pair1_id: validPairs[i].id, pair2_id: validPairs[j].id, status: 'pending', stage: group.name }); } } }); if (matchesToCreate.length === 0) { setIsGenerating(false); return alert('⚠️ Nenhum confronto gerado. Verifique se os grupos têm ao menos 2 duplas.'); } const { error } = await supabase.from('matches').insert(matchesToCreate); setIsGenerating(false); if (error) { console.error('Erro Supabase:', error); alert('❌ Erro ao salvar partidas: ' + error.message); } else { alert('✅ Grupos e Partidas gerados com sucesso!'); await loadData(); setManualSlots({}); setGroupType('auto'); notifyTV(); } };
   const resetCategoryMatches = async () => { if (!selectedC) return; const cat = categories.find(c => c.id === selectedC); if (!window.confirm(`🚨 ALERTA CRÍTICO: Isso apagará TODOS os jogos e resultados da categoria "${cat?.name}". Esta ação não pode ser desfeita.`)) return; if (!window.confirm('Tem real certeza de que deseja apagar absolutamente tudo desta categoria?')) return; const { error } = await supabase.from('matches').delete().eq('category_id', selectedC); if (error) alert(error.message); else { await loadData(); notifyTV(); alert('✅ Categoria resetada com sucesso!'); } };
   const handleFileUpload = (e) => { const file = e.target.files[0]; if (!file) return; setImportFileName(file.name); const reader = new FileReader(); reader.onload = (evt) => { const bstr = evt.target.result; const wb = XLSX.read(bstr, { type: 'binary' }); const wsname = wb.SheetNames[0]; const ws = wb.Sheets[wsname]; const data = XLSX.utils.sheet_to_json(ws); const normalized = data.map(row => { const n = {}; Object.keys(row).forEach(k => { const key = k.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); n[key] = row[k]; }); return { categoria: n.categoria || n.category || '', atleta1: n.atleta1 || n.player1 || '', atleta2: n.atleta2 || n.player2 || '', quadra: n.quadra || n.court || '', horario: n.horario || n.time || '' }; }).filter(r => r.categoria && r.atleta1 && r.atleta2); setImportData(normalized); }; reader.readAsBinaryString(file); };

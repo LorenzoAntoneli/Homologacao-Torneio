@@ -130,7 +130,10 @@ export default function TVDisplay() {
           setCallQueue(prev => [...prev, m]);
         }
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') console.log('✅ TV conectada ao Realtime!');
+        if (status === 'CHANNEL_ERROR') console.error('❌ Erro na conexão Realtime da TV. Verifique se o Realtime está ativo no Dashboard do Supabase.');
+      });
 
     return () => { clearInterval(timer); supabase.removeChannel(ch); };
   }, []);
