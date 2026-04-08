@@ -143,10 +143,14 @@ export const AdminProvider = ({ children }) => {
           } catch (e) { }
         }
       }
-      if (selectedT) {
-        const currentT = tData.find(t => t.id === selectedT);
-        if (currentT && currentT.settings) {
-          setTournamentSettings(typeof currentT.settings === 'string' ? JSON.parse(currentT.settings) : currentT.settings);
+      if (selectedT && sData) {
+        const st = sData.find(s => s.id === `rules_${selectedT}`);
+        if (st && st.value) {
+          try {
+            setTournamentSettings(typeof st.value === 'string' ? JSON.parse(st.value) : st.value);
+          } catch(e) {
+            setTournamentSettings({ max_pairs: 15, num_groups: 4, classify_per_group: 2, ranking_criteria: 'wins_balance_pro', bracket_type: 'cross_seed' });
+          }
         } else {
           setTournamentSettings({ max_pairs: 15, num_groups: 4, classify_per_group: 2, ranking_criteria: 'wins_balance_pro', bracket_type: 'cross_seed' });
         }
@@ -156,9 +160,9 @@ export const AdminProvider = ({ children }) => {
 
   const saveTournamentSettings = async () => {
     if (!selectedT) return alert('Selecione um torneio!');
-    const { error } = await supabase.from('tournaments').update({ settings: tournamentSettings }).eq('id', selectedT);
+    const { error } = await supabase.from('settings').upsert({ id: `rules_${selectedT}`, value: JSON.stringify(tournamentSettings) });
     if (error) alert('Erro ao salvar: ' + error.message);
-    else { alert('✅ Regras do Torneio Salvas!'); loadData(); }
+    else { alert('✅ Regras do Torneio Salvas e vinculadas ao banco!'); loadData(); }
   };
 
   useEffect(() => { if (session) loadData(); }, [session, selectedT, selectedC]);
