@@ -391,8 +391,8 @@ export default function Admin() {
   };
 
    const calculateStandings = (catId) => {
-    const catMatches = matches.filter(m => m.category_id === catId && m.status === 'finished' && m.stage.startsWith('Grupo'));
-    const catPairs = pairs.filter(p => p.category_id === catId);
+    const catMatches = matches.filter(m => m && m.category_id === catId && m.status === 'finished' && m.stage?.startsWith('Grupo'));
+    const catPairs = pairs.filter(p => p && p.category_id === catId);
     
     const stats = {};
     catPairs.forEach(p => {
@@ -422,17 +422,17 @@ export default function Admin() {
     const groups = {};
     catMatches.forEach(m => {
       const gName = m.stage;
-      if (!groups[gName]) groups[gName] = [];
+      if (gName && !groups[gName]) groups[gName] = [];
     });
     
     // Como os matches já tem o stage, vamos inferir os grupos do manualSlots ou dos matches
     const finalGroups = {};
     // Pegar todos os grupos reais baseados nos nomes das fases
-    const distinctGroups = [...new Set(matches.filter(m => m.category_id === catId && m.stage.startsWith('Grupo')).map(m => m.stage))];
+    const distinctGroups = [...new Set(matches.filter(m => m && m.category_id === catId && m.stage?.startsWith('Grupo')).map(m => m.stage))];
     
     distinctGroups.forEach(gName => {
       // Filtrar duplas que jogaram nesse grupo
-      const pairIdsInGroup = [...new Set(matches.filter(m => m.stage === gName && m.category_id === catId).flatMap(m => [m.pair1_id, m.pair2_id]))];
+      const pairIdsInGroup = [...new Set(matches.filter(m => m && m.stage === gName && m.category_id === catId).flatMap(m => [m.pair1_id, m.pair2_id]))];
       finalGroups[gName] = sorted.filter(s => pairIdsInGroup.includes(s.id));
     });
 

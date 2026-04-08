@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from './supabase';
-import { Search, Trophy, Clock, MapPin, ChevronDown, ChevronUp, Star, Users, Swords, BarChart3, Medal } from 'lucide-react';
+import { Search, Trophy, Clock, MapPin, ChevronDown, ChevronUp, Star, Users, Swords, BarChart3, Medal, Filter } from 'lucide-react';
 import logo from './assets/logo.jpg';
 
 export default function PlayerPortal() {
@@ -13,6 +13,7 @@ export default function PlayerPortal() {
   const [tournaments, setTournaments] = useState([]);
   const [expandedGroup, setExpandedGroup] = useState(null);
   const [activeTab, setActiveTab] = useState('meus-jogos');
+  const [selectedCat, setSelectedCat] = useState('');
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
@@ -89,8 +90,14 @@ export default function PlayerPortal() {
     );
   }, [matches, myPairIds]);
 
-  const myPending = myMatches.filter(m => m.status !== 'finished');
-  const myFinished = myMatches.filter(m => m.status === 'finished');
+  const myPending = myMatches.filter(m => m.status !== 'finished').filter(m => !selectedCat || m.category_id === selectedCat);
+  const myFinished = myMatches.filter(m => m.status === 'finished').filter(m => !selectedCat || m.category_id === selectedCat);
+
+  // All available categories (for filter)
+  const availableCategories = useMemo(() => {
+    const catIds = [...new Set(matches.map(m => m.category_id))];
+    return categories.filter(c => catIds.includes(c.id));
+  }, [matches, categories]);
 
   // Calculate group standings for categories where the player participates
   const playerCategories = useMemo(() => {
@@ -99,8 +106,8 @@ export default function PlayerPortal() {
   }, [myPairs, categories]);
 
   const calculateStandings = (catId) => {
-    const catMatches = matches.filter(m => m.category_id === catId && m.status === 'finished' && m.stage && m.stage.startsWith('Grupo'));
-    const catPairs = pairs.filter(p => p.category_id === catId);
+    const catMatches = matches.filter(m => m && m.category_id === catId && m.status === 'finished' && m.stage?.startsWith('Grupo'));
+    const catPairs = pairs.filter(p => p && p.category_id === catId);
 
     const stats = {};
     catPairs.forEach(p => {
@@ -108,7 +115,7 @@ export default function PlayerPortal() {
     });
 
     catMatches.forEach(m => {
-      if (!stats[m.pair1_id] || !stats[m.pair2_id]) return;
+      if (!m || !stats[m.pair1_id] || !stats[m.pair2_id]) return;
       stats[m.pair1_id].matches++;
       stats[m.pair2_id].matches++;
       stats[m.pair1_id].gp += m.pair1_games;
@@ -127,11 +134,12 @@ export default function PlayerPortal() {
     });
 
     // Group by stage name
-    const distinctGroups = [...new Set(matches.filter(m => m.category_id === catId && m.stage && m.stage.startsWith('Grupo')).map(m => m.stage))];
+    const distinctGroups = [...new Set(matches.filter(m => m && m.category_id === catId && m.stage?.startsWith('Grupo')).map(m => m.stage))];
     const finalGroups = {};
     distinctGroups.forEach(gName => {
-      const pairIdsInGroup = [...new Set(matches.filter(m => m.stage === gName && m.category_id === catId).flatMap(m => [m.pair1_id, m.pair2_id]))];
-      finalGroups[gName] = sorted.filter(s => pairIdsInGroup.includes(s.id));
+      if (!gName) return;
+      const pairIdsInGroup = [...new Set(matches.filter(m => m && m.stage === gName && m.category_id === catId).flatMap(m => [m.pair1_id, m.pair2_id]))];
+      finalGroups[gName] = sorted.filter(s => s && pairIdsInGroup.includes(s.id));
     });
 
     return finalGroups;
@@ -140,24 +148,25 @@ export default function PlayerPortal() {
   // All standings for all categories (for the "Classificação" tab)
   const allStandings = useMemo(() => {
     const result = {};
-    const relevantCatIds = [...new Set(matches.filter(m => m.stage && m.stage.startsWith('Grupo')).map(m => m.category_id))];
+    const relevantCatIds = [...new Set(matches.filter(m => m && m.stage?.startsWith('Grupo')).map(m => m.category_id))];
     relevantCatIds.forEach(catId => {
+      if (selectedCat && catId !== selectedCat) return;
       const cat = categories.find(c => c.id === catId);
       if (cat) result[catId] = { name: cat.name, groups: calculateStandings(catId) };
     });
     return result;
-  }, [matches, categories, pairs]);
+  }, [matches, categories, pairs, selectedCat]);
 
   // Bracket data for "Chave" tab
   const bracketData = useMemo(() => {
-    const bracketMatches = matches.filter(m => m.stage && !m.stage.startsWith('Grupo'));
+    const bracketMatches = matches.filter(m => m && m.stage && !m.stage?.startsWith('Grupo')).filter(m => !selectedCat || m.category_id === selectedCat);
     const byCat = {};
     bracketMatches.forEach(m => {
       if (!byCat[m.category_id]) byCat[m.category_id] = [];
       byCat[m.category_id].push(m);
     });
     return byCat;
-  }, [matches]);
+  }, [matches, selectedCat]);
 
   const getPlayerPosition = (catId) => {
     const standings = calculateStandings(catId);
@@ -205,6 +214,22 @@ export default function PlayerPortal() {
         <button type="submit" className="player-search-btn">BUSCAR</button>
       </form>
 
+      {/* Category Filter */}
+      <div style={{ padding: '0 20px 15px', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <Filter size={16} style={{ color: '#666', flexShrink: 0 }} />
+        <select
+          value={selectedCat}
+          onChange={e => setSelectedCat(e.target.value)}
+          className="player-search-input"
+          style={{ paddingLeft: '14px', margin: 0 }}
+        >
+          <option value="">Todas as Categorias</option>
+          {availableCategories.map(c => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+      </div>
+
       {/* Tabs */}
       <div className="player-tabs">
         <button
@@ -251,7 +276,7 @@ export default function PlayerPortal() {
             ) : (
               <>
                 {/* Player Info Cards */}
-                {myPairs.map(pair => {
+                {myPairs.filter(p => !selectedCat || p.category_id === selectedCat).map(pair => {
                   const cat = categories.find(c => c.id === pair.category_id);
                   const pos = getPlayerPosition(pair.category_id);
                   return (

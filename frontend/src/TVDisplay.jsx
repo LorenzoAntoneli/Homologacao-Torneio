@@ -190,7 +190,7 @@ export default function TVDisplay() {
 
   // 1. COLETOR: Monitora partidas para o horário atual e adiciona na fila
   useEffect(() => {
-    const toQueue = matches.filter(m => m.status === 'pending' && m.scheduled_time && m.scheduled_time.startsWith(currentTime) && !calledIds.has(m.id));
+    const toQueue = matches.filter(m => m && m.status === 'pending' && m.scheduled_time?.startsWith(currentTime) && !calledIds.has(m.id));
     if (toQueue.length > 0) {
       setCallQueue(prev => [...prev, ...toQueue]);
       setCalledIds(prev => {
@@ -224,12 +224,12 @@ export default function TVDisplay() {
   // Calculate group standings for TV
   const calculateTVStandings = () => {
     const result = {};
-    const relevantCatIds = [...new Set(matches.filter(m => m.stage && m.stage.startsWith('Grupo')).map(m => m.category_id))];
+    const relevantCatIds = [...new Set(matches.filter(m => m && m.stage?.startsWith('Grupo')).map(m => m.category_id))];
     
     relevantCatIds.forEach(catId => {
-      const catName = matches.find(m => m.category_id === catId)?.category_name || 'Categoria';
-      const catMatches = matches.filter(m => m.category_id === catId && m.status === 'finished' && m.stage && m.stage.startsWith('Grupo'));
-      const catPairs = pairs.filter(p => p.category_id === catId);
+      const catName = matches.find(m => m && m.category_id === catId)?.category_name || 'Categoria';
+      const catMatches = matches.filter(m => m && m.category_id === catId && m.status === 'finished' && m.stage?.startsWith('Grupo'));
+      const catPairs = pairs.filter(p => p && p.category_id === catId);
 
       const stats = {};
       catPairs.forEach(p => {
@@ -237,7 +237,7 @@ export default function TVDisplay() {
       });
 
       catMatches.forEach(m => {
-        if (!stats[m.pair1_id] || !stats[m.pair2_id]) return;
+        if (!m || !stats[m.pair1_id] || !stats[m.pair2_id]) return;
         stats[m.pair1_id].matches++;
         stats[m.pair2_id].matches++;
         stats[m.pair1_id].gp += m.pair1_games;
@@ -255,11 +255,12 @@ export default function TVDisplay() {
         return b.gp - a.gp;
       });
 
-      const distinctGroups = [...new Set(matches.filter(m => m.category_id === catId && m.stage && m.stage.startsWith('Grupo')).map(m => m.stage))];
+      const distinctGroups = [...new Set(matches.filter(m => m && m.category_id === catId && m.stage?.startsWith('Grupo')).map(m => m.stage))];
       const groups = {};
       distinctGroups.forEach(gName => {
-        const pairIdsInGroup = [...new Set(matches.filter(m => m.stage === gName && m.category_id === catId).flatMap(m => [m.pair1_id, m.pair2_id]))];
-        groups[gName] = sorted.filter(s => pairIdsInGroup.includes(s.id));
+        if (!gName) return;
+        const pairIdsInGroup = [...new Set(matches.filter(m => m && m.stage === gName && m.category_id === catId).flatMap(m => [m.pair1_id, m.pair2_id]))];
+        groups[gName] = sorted.filter(s => s && pairIdsInGroup.includes(s.id));
       });
 
       result[catId] = { name: catName, groups };
