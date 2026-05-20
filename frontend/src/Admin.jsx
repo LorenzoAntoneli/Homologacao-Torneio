@@ -1,8 +1,15 @@
+<<<<<<< HEAD
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabase';
 import { Swords, LogOut, Monitor, PlusCircle, UserPlus, Gamepad2, Settings, MapPin, LayoutList, Trash2, Pencil, Volume2, Network, FileSpreadsheet, Download, Upload, Smartphone } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import logo from './assets/logo.jpg';
+=======
+import { useState, useEffect } from 'react';
+import { supabase } from './supabase';
+import { Swords, LogOut, Monitor, PlusCircle, UserPlus, Gamepad2, Settings, MapPin, LayoutList, Trash2, Pencil, Volume2, Network } from 'lucide-react';
+import logo from './assets/logo-go.png';
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
 
 export default function Admin() {
   const [session, setSession] = useState(localStorage.getItem('bt_session'));
@@ -42,6 +49,7 @@ export default function Admin() {
   const [editP2, setEditP2] = useState('');
   const [editCourt, setEditCourt] = useState('');
   const [editTime, setEditTime] = useState('');
+<<<<<<< HEAD
   const [editG1, setEditG1] = useState('');
   const [editG2, setEditG2] = useState('');
   const [editT1, setEditT1] = useState('');
@@ -71,6 +79,8 @@ export default function Admin() {
     ranking_criteria: 'wins_balance_pro', 
     bracket_type: 'cross_seed'
   });
+=======
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
 
   // Persistent TV Channel para Broadcasts instantâneos
   const [tvChannel, setTvChannel] = useState(null);
@@ -81,6 +91,7 @@ export default function Admin() {
     return () => { supabase.removeChannel(ch); };
   }, []);
 
+<<<<<<< HEAD
   const notifyTV = () => {
     if (tvChannel) {
       tvChannel.send({
@@ -91,6 +102,8 @@ export default function Admin() {
     }
   };
 
+=======
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
   const loadData = async () => {
     try {
       const { data: tData } = await supabase.from('tournaments').select('*').order('created_at', { ascending: false });
@@ -110,8 +123,12 @@ export default function Admin() {
         pair1: pairMap[m.pair1_id],
         pair2: pairMap[m.pair2_id],
         category: catMap[m.category_id],
+<<<<<<< HEAD
         court: courtMap[m.court_id],
         category_name: catMap[m.category_id]?.name || 'Geral'
+=======
+        court: courtMap[m.court_id]
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
       }));
 
       setMatches(formatted);
@@ -136,6 +153,7 @@ export default function Admin() {
           } catch(e) {}
         }
       }
+<<<<<<< HEAD
       if (selectedT) {
         const currentT = tData.find(t => t.id === selectedT);
         if (currentT && currentT.settings) {
@@ -154,6 +172,11 @@ export default function Admin() {
     else { alert('✅ Regras do Torneio Salvas!'); loadData(); }
   };
 
+=======
+    } catch (e) { console.error("Erro no carregamento:", e); }
+  };
+
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
   useEffect(() => { if (session) loadData(); }, [session, selectedT, selectedC]);
 
   const handleLogin = (e) => { e.preventDefault(); if (password === 'admin123') { localStorage.setItem('bt_session', 'logged'); setSession('logged'); } else alert('Senha Incorreta!'); };
@@ -179,6 +202,7 @@ export default function Admin() {
       return alert(error.message);
     }
     
+<<<<<<< HEAD
     notifyTV();
 
     // Se possui próxima partida na árvore de mata-mata, sobe o vencedor
@@ -192,6 +216,10 @@ export default function Admin() {
          if (nextMatch.pair1_id && nextMatch.pair1_id !== winnerId) updateField = 'pair2_id';
          await supabase.from('matches').update({ [updateField]: winnerId }).eq('id', match.next_match_id);
        }
+=======
+    if (tvChannel) {
+      tvChannel.send({ type: 'broadcast', event: 'match_finished', payload: { matchId: match.id } });
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
     }
     
     alert('✅ Placar Oficializado!'); loadData();
@@ -201,25 +229,41 @@ export default function Admin() {
     if (!newTName) return; 
     const { error } = await supabase.from('tournaments').insert([{ name: newTName }]);
     if (error) alert("Erro ao criar torneio: " + error.message);
+<<<<<<< HEAD
     else { setNewTName(''); loadData(); notifyTV(); }
+=======
+    else { setNewTName(''); loadData(); }
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
   };
   const createCategory = async () => { 
     if (!selectedT || !newCName) return; 
     const { error } = await supabase.from('categories').insert([{ tournament_id: selectedT, name: newCName }]);
     if (error) alert("Erro ao criar categoria: " + error.message);
+<<<<<<< HEAD
     else { setNewCName(''); loadData(); notifyTV(); }
+=======
+    else { setNewCName(''); loadData(); }
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
   };
   const createCourt = async () => { 
     if (!selectedT || !newCourtName) return; 
     const { error } = await supabase.from('courts').insert([{ tournament_id: selectedT, name: newCourtName }]);
     if (error) alert("Erro ao criar quadra: " + error.message);
+<<<<<<< HEAD
     else { setNewCourtName(''); loadData(); notifyTV(); }
+=======
+    else { setNewCourtName(''); loadData(); }
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
   };
   const createSponsor = async () => { 
     if (!newSponsor.name || !newSponsor.logo_url) return; 
     const { error } = await supabase.from('sponsors').insert([newSponsor]);
     if (error) alert("Erro ao criar patrocinador: " + error.message);
+<<<<<<< HEAD
     else { setNewSponsor({ name: '', logo_url: '' }); loadData(); notifyTV(); }
+=======
+    else { setNewSponsor({ name: '', logo_url: '' }); loadData(); }
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
   };
   const saveVoiceKey = async () => {
     if (!voiceKey) return;
@@ -233,7 +277,17 @@ export default function Admin() {
     if (error) {
       alert(error.message);
     } else {
+<<<<<<< HEAD
       notifyTV();
+=======
+      if (tvChannel) {
+        tvChannel.send({
+          type: 'broadcast',
+          event: 'tv_settings',
+          payload
+        });
+      }
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
       alert('✅ Exibição da TV atualizada!');
     }
   };
@@ -266,7 +320,11 @@ export default function Admin() {
     if (!selectedC || !atleta1 || !atleta2) return; 
     const { error } = await supabase.from('pairs').insert([{ category_id: selectedC, name: `${atleta1} / ${atleta2}` }]);
     if (error) alert("Erro ao criar dupla: " + error.message);
+<<<<<<< HEAD
     else { setAtleta1(''); setAtleta2(''); loadData(); notifyTV(); }
+=======
+    else { setAtleta1(''); setAtleta2(''); loadData(); }
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
   };
   const createMatch = async () => { 
     if (!selectedT || !selectedC || !matchP1 || !matchP2) return; 
@@ -283,7 +341,11 @@ export default function Admin() {
     else { 
       loadData(); 
       setActiveTab('scoreboard'); 
+<<<<<<< HEAD
       notifyTV();
+=======
+      if (tvChannel) tvChannel.send({ type: 'broadcast', event: 'sync_data' });
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
     }
   };
 
@@ -292,7 +354,11 @@ export default function Admin() {
     const { error } = await supabase.from('matches').delete().eq('id', id);
     if (error) alert(error.message); else {
       loadData();
+<<<<<<< HEAD
       notifyTV();
+=======
+      if (tvChannel) tvChannel.send({ type: 'broadcast', event: 'sync_data' });
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
     }
   };
 
@@ -302,15 +368,19 @@ export default function Admin() {
     setEditP2(m.pair2_id || '');
     setEditCourt(m.court_id || '');
     setEditTime(m.scheduled_time || '');
+<<<<<<< HEAD
     setEditG1(m.pair1_games !== null ? m.pair1_games : '');
     setEditG2(m.pair2_games !== null ? m.pair2_games : '');
     setEditT1(m.pair1_tiebreak || '');
     setEditT2(m.pair2_tiebreak || '');
     setEditStatus(m.status || 'pending');
+=======
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
   };
 
   const saveEdit = async () => {
     if (!editingMatch) return;
+<<<<<<< HEAD
 
     let winnerId = null;
     let g1 = editG1 !== '' ? parseInt(editG1) : null;
@@ -330,22 +400,28 @@ export default function Admin() {
        }
     }
 
+=======
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
     const { error } = await supabase.from('matches').update({
       pair1_id: editP1 || null,
       pair2_id: editP2 || null,
       court_id: editCourt || null,
       scheduled_time: editTime || null,
+<<<<<<< HEAD
       pair1_games: g1,
       pair2_games: g2,
       pair1_tiebreak: t1,
       pair2_tiebreak: t2,
       status: editStatus,
       winner_id: winnerId,
+=======
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
       updated_at: new Date().toISOString()
     }).eq('id', editingMatch.id);
 
     if (error) alert(error.message);
     else {
+<<<<<<< HEAD
       // Se era chaveamento e mudou o vencedor, precisa atualizar o próximo jogo
       if (winnerId && editingMatch.next_match_id) {
          const { data: nextMatch } = await supabase.from('matches').select('*').eq('id', editingMatch.next_match_id).single();
@@ -645,6 +721,11 @@ export default function Admin() {
       loadData();
       notifyTV();
       alert('✅ Categoria resetada com sucesso!');
+=======
+      setEditingMatch(null);
+      loadData();
+      if (tvChannel) tvChannel.send({ type: 'broadcast', event: 'sync_data' });
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
     }
   };
 
@@ -670,11 +751,17 @@ export default function Admin() {
           <div className={`nav-item ${activeTab === 'scoreboard' ? 'active' : ''}`} onClick={() => setActiveTab('scoreboard')}><Swords size={20} /> Score (Ativos)</div>
           <div className={`nav-item ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}><LayoutList size={20} /> Partidas (Encerradas)</div>
           <div className={`nav-item ${activeTab === 'matches' ? 'active' : ''}`} onClick={() => setActiveTab('matches')}><Gamepad2 size={20} /> Agendar Jogo</div>
+<<<<<<< HEAD
           <div className={`nav-item ${activeTab === 'brackets' ? 'active' : ''}`} onClick={() => setActiveTab('brackets')}><Network size={20} /> Chaveamento</div>
           <div className={`nav-item ${activeTab === 'pairs' ? 'active' : ''}`} onClick={() => setActiveTab('pairs')}><UserPlus size={20} /> Duplas</div>
           <div className={`nav-item ${activeTab === 'import' ? 'active' : ''}`} onClick={() => setActiveTab('import')}><FileSpreadsheet size={20} /> Importar/Exportar</div>
           <div className={`nav-item ${activeTab === 'setup' ? 'active' : ''}`} onClick={() => setActiveTab('setup')}><Settings size={20} />Configurar</div>
           <div style={{ marginTop: 'auto' }}><a href="/tv" target="_blank" className="nav-item" style={{ textDecoration: 'none' }}><Monitor size={20} /> Ver TV</a><a href="/jogador" target="_blank" className="nav-item" style={{ textDecoration: 'none' }}><Smartphone size={20} /> Portal Jogador</a><div className="nav-item" onClick={handleLogout} style={{ color: 'var(--accent-secondary)' }}><LogOut size={20} /> Sair</div></div>
+=======
+          <div className={`nav-item ${activeTab === 'pairs' ? 'active' : ''}`} onClick={() => setActiveTab('pairs')}><UserPlus size={20} /> Duplas</div>
+          <div className={`nav-item ${activeTab === 'setup' ? 'active' : ''}`} onClick={() => setActiveTab('setup')}><Settings size={20} />Configurar</div>
+          <div style={{ marginTop: 'auto' }}><a href="/tv" target="_blank" className="nav-item" style={{ textDecoration: 'none' }}><Monitor size={20} /> Ver TV</a><div className="nav-item" onClick={handleLogout} style={{ color: 'var(--accent-secondary)' }}><LogOut size={20} /> Sair</div></div>
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
         </nav>
       </aside>
 
@@ -683,8 +770,12 @@ export default function Admin() {
         <div className={`m-nav-item ${activeTab === 'scoreboard' ? 'active' : ''}`} onClick={() => setActiveTab('scoreboard')}><Swords size={20} /><small>Score</small></div>
         <div className={`m-nav-item ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}><LayoutList size={20} /><small>Partidas</small></div>
         <div className={`m-nav-item ${activeTab === 'matches' ? 'active' : ''}`} onClick={() => setActiveTab('matches')}><Gamepad2 size={20} /><small>Agendar</small></div>
+<<<<<<< HEAD
         <div className={`m-nav-item ${activeTab === 'brackets' ? 'active' : ''}`} onClick={() => setActiveTab('brackets')}><Network size={20} /><small>Chaves</small></div>
         <div className={`m-nav-item ${activeTab === 'import' ? 'active' : ''}`} onClick={() => setActiveTab('import')}><FileSpreadsheet size={20} /><small>Excel</small></div>
+=======
+        <div className={`m-nav-item ${activeTab === 'pairs' ? 'active' : ''}`} onClick={() => setActiveTab('pairs')}><UserPlus size={20} /><small>Duplas</small></div>
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
         <div className={`m-nav-item ${activeTab === 'setup' ? 'active' : ''}`} onClick={() => setActiveTab('setup')}><Settings size={20} /><small>Setup</small></div>
       </nav>
 
@@ -697,6 +788,7 @@ export default function Admin() {
         {activeTab === 'scoreboard' && (
           <div>
             <h1 className="section-title">Em Quadra / Próximos</h1>
+<<<<<<< HEAD
             
             {/* Filtros de Busca */}
             <div className="app-card" style={{ marginBottom: 20, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, padding: 15 }}>
@@ -731,6 +823,10 @@ export default function Admin() {
                 return m.pair1?.name?.toLowerCase().includes(search) || m.pair2?.name?.toLowerCase().includes(search);
               })
               .map(m => (
+=======
+             <p style={{ opacity: 0.5, fontSize: '0.8rem', textAlign: 'center', marginBottom: 20 }}>Edite (no Lápis) para definir quadra/horário. Jogos sem dupla fechada não aparecem aqui.</p>
+            {matches.filter(m => m.status !== 'finished' && m.pair1_id && m.pair2_id).map(m => (
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
               <div key={m.id} className="app-card" style={{ borderLeftColor: 'var(--accent-primary)', paddingTop: 10 }}>
                 {/* Barra de Topo do Card (Ações) */}
                 <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 5px 10px 0', gap: 8 }}>
@@ -755,6 +851,7 @@ export default function Admin() {
                   </button>
                 </div>
 
+<<<<<<< HEAD
                 <div style={{ textAlign: 'center', marginBottom: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
                   {m.stage && (
                     <div style={{ fontSize: '0.75rem', fontWeight: 950, color: 'var(--accent-primary)', textTransform: 'uppercase', letterSpacing: 3, background: 'rgba(212,175,55,0.1)', padding: '5px 15px', borderRadius: 20 }}>
@@ -766,6 +863,12 @@ export default function Admin() {
                     {m.court && <span className="cat-badge" style={{ background: 'rgba(255,255,255,0.05)', color: '#fff' }}>{m.court.name}</span>}
                     {m.scheduled_time && <span className="cat-badge" style={{ background: 'rgba(255,255,255,0.05)', color: '#fff' }}>{m.scheduled_time}</span>}
                   </div>
+=======
+                <div style={{ textAlign: 'center', marginBottom: 20, display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <span className="cat-badge">{m.category?.name || 'Geral'}</span>
+                  {m.court && <span className="cat-badge" style={{ background: 'rgba(255,255,255,0.05)', color: '#fff' }}>{m.court.name}</span>}
+                  {m.scheduled_time && <span className="cat-badge" style={{ background: 'rgba(255,255,255,0.05)', color: '#fff' }}>{m.scheduled_time}</span>}
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 15, marginBottom: 25 }}>
                   <div style={{ flex: 1, textAlign: 'center' }}><div style={{ fontWeight: 800, marginBottom: 10, fontSize: '0.9rem', height: '2rem' }}>{m.pair1?.name}</div><input id={`g1-${m.id}`} type="number" placeholder="0" style={{ width: 80, height: 80, textAlign: 'center', fontSize: '2rem', fontWeight: 900, marginBottom: 0, background: '#1a1a1a', border: '1px solid #333', borderRadius: 12, color: '#fff' }} /></div>
@@ -798,6 +901,7 @@ export default function Admin() {
               {matches.filter(m => m.status === 'finished').map(m => (
                 <div key={m.id} className="app-card" style={{ padding: '15px 20px', borderLeft: '4px solid var(--accent-primary)', marginBottom: 0 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', marginBottom: 12, opacity: 0.6, letterSpacing: 1 }}>
+<<<<<<< HEAD
                     <div style={{ display: 'flex', gap: 10 }}>
                        <span style={{ color: 'var(--accent-primary)', fontWeight: 800 }}>{m.stage?.startsWith('Grupo') ? `GRUPO: ${m.stage}` : m.stage?.toUpperCase() || 'AMISTOSO'}</span>
                        <span>{m.category?.name} • {m.court?.name}</span>
@@ -806,6 +910,10 @@ export default function Admin() {
                       <span style={{ cursor: 'pointer', color: 'var(--accent-primary)' }} onClick={() => startEdit(m)}><Pencil size={14} /></span>
                       <span>{new Date(m.updated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
+=======
+                    <span>{m.category?.name} • {m.court?.name}</span>
+                    <span>{new Date(m.updated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -850,6 +958,10 @@ export default function Admin() {
 
             <div className="app-card" style={{ borderLeftColor: 'var(--accent-primary)', marginBottom: 30 }}>
               <h2 style={{ fontSize: '1.2rem', marginBottom: 15, color: 'var(--accent-primary)', fontWeight: 800 }}>Controle Automático ou Manual da TV</h2>
+<<<<<<< HEAD
+=======
+              
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
               <label className="input-label">Modo de Exibição / Tela Fixa</label>
               <select value={tvMode} onChange={e => setTvMode(e.target.value)} style={{ marginBottom: 15 }}>
                 <option value="auto">Automático (Rotacionar todas)</option>
@@ -857,15 +969,24 @@ export default function Admin() {
                 <option value="1">Fixo: Próximas Partidas</option>
                 <option value="2">Fixo: Mural de Resultados</option>
                 <option value="3">Fixo: Patrocinadores</option>
+<<<<<<< HEAD
                 <option value="4">Fixo: Chaveamento (Mata-Mata)</option>
                 <option value="5">Fixo: Classificação dos Grupos</option>
               </select>
               <label className="input-label">Tempo do Slide (segundos)</label>
               <input type="number" value={tvTime} onChange={e => setTvTime(e.target.value)} placeholder="Ex: 30" style={{ marginBottom: 20 }} />
+=======
+              </select>
+
+              <label className="input-label">Tempo do Slide (segundos)</label>
+              <input type="number" value={tvTime} onChange={e => setTvTime(e.target.value)} placeholder="Ex: 30" style={{ marginBottom: 20 }} />
+
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
               <button className="btn-primary" style={{ width: '100%', height: 50, marginTop: 10, fontWeight: 900 }} onClick={saveTvSettings}>APLICAR NA TV AGORA</button>
             </div>
 
             <div className="app-card"><label className="input-label">Novo Torneio</label><input value={newTName} onChange={e => setNewTName(e.target.value)} placeholder="Ex: Open Verão" /><button onClick={createTournament} className="btn-primary" style={{ width: '100%', height: 55 }}>Salvar Evento</button></div>
+<<<<<<< HEAD
             
             {tournaments.length > 0 && (
               <div style={{ marginTop: 20 }}>
@@ -908,21 +1029,48 @@ export default function Admin() {
                       <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
                         <input value={newSponsor.name} onChange={e => setNewSponsor({...newSponsor, name: e.target.value})} placeholder="Marca" style={{ marginBottom: 0 }} />
                         <input value={newSponsor.logo_url} onChange={e => setNewSponsor({...newSponsor, logo_url: e.target.value})} placeholder="URL Logo" style={{ marginBottom: 0 }} />
+=======
+            {tournaments.length > 0 && (
+              <>
+                <div className="app-card"><label className="input-label">Selecionar Torneio</label><select value={selectedT} onChange={e => setSelectedT(e.target.value)}><option value="">Escolha...</option>{tournaments.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></div>
+                {selectedT && (
+                  <div style={{ display: 'grid', gap: 20 }}>
+                    <div className="app-card"><label className="input-label">Nova Categoria</label><div style={{ display: 'flex', gap: 10 }}><input value={newCName} onChange={e => setNewCName(e.target.value)} placeholder="Ex: Masculino A" style={{ marginBottom: 0 }} /><button onClick={createCategory} className="btn-primary" style={{ padding: '0 25px' }}><PlusCircle /></button></div></div>
+                    <div className="app-card"><label className="input-label">Nova Quadra</label><div style={{ display: 'flex', gap: 10 }}><input value={newCourtName} onChange={e => setNewCourtName(e.target.value)} placeholder="Ex: Quadra 01" style={{ marginBottom: 0 }} /><button onClick={createCourt} className="btn-primary" style={{ padding: '0 25px' }}><MapPin /></button></div></div>
+                    
+
+                    <div className="app-card" style={{ gridColumn: '1 / -1' }}>
+                      <label className="input-label">Patrocinadores (Logos)</label>
+                      <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+                        <input value={newSponsor.name} onChange={e => setNewSponsor({...newSponsor, name: e.target.value})} placeholder="Nome da Marca" style={{ marginBottom: 0 }} />
+                        <input value={newSponsor.logo_url} onChange={e => setNewSponsor({...newSponsor, logo_url: e.target.value})} placeholder="URL da Logo (PNG ou JPG)" style={{ marginBottom: 0 }} />
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
                         <button onClick={createSponsor} className="btn-primary" style={{ padding: '0 25px' }}><PlusCircle /></button>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 15 }}>
                         {sponsors.map(s => (
+<<<<<<< HEAD
                           <div key={s.id} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 10, border: '1px solid #333', position: 'relative' }}>
                             <img src={s.logo_url} alt={s.name} style={{ width: '100%', height: 60, objectFit: 'contain', marginBottom: 5 }} />
                             <div style={{ fontSize: '0.6rem', textAlign: 'center', opacity: 0.5 }}>{s.name}</div>
                             <button onClick={async () => { await supabase.from('sponsors').delete().eq('id', s.id); loadData(); }} style={{ position: 'absolute', top: 5, right: 5, background: 'red', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '10px', border: 'none' }}>×</button>
+=======
+                          <div key={s.id} style={{ background: 'rgba(255,255,255,0.03)', padding: 10, borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center', position: 'relative' }}>
+                            <img src={s.logo_url} alt={s.name} style={{ width: '100%', height: 40, objectFit: 'contain', marginBottom: 5 }} />
+                            <div style={{ fontSize: '0.6rem', opacity: 0.5, whiteSpace: 'nowrap', overflow: 'hidden' }}>{s.name}</div>
+                            <button onClick={() => deleteSponsor(s.id)} style={{ position: 'absolute', top: -5, right: -5, background: '#ff4d4d', color: '#fff', border: 'none', borderRadius: '50%', width: 20, height: 20, fontSize: 10, cursor: 'pointer' }}>X</button>
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
                           </div>
                         ))}
                       </div>
                     </div>
                   </div>
                 )}
+<<<<<<< HEAD
               </div>
+=======
+              </>
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
             )}
           </div>
         )}
@@ -933,6 +1081,7 @@ export default function Admin() {
             <div className="app-card">
               <label className="input-label">Torneio e Categoria</label>
               <div style={{ display: 'grid', gap: 10, marginBottom: 20 }}><select value={selectedT} onChange={e => setSelectedT(e.target.value)} style={{ marginBottom: 0 }}><option value="">Torneio...</option>{tournaments.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select><select value={selectedC} onChange={e => setSelectedC(e.target.value)} style={{ marginBottom: 0 }}><option value="">Categoria...</option>{categories.filter(c => c.tournament_id === selectedT).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+<<<<<<< HEAD
               {selectedC && (
                 <div style={{ display: 'grid', gap: 10 }}>
                   <label className="input-label">Nomes dos Atletas</label>
@@ -941,10 +1090,14 @@ export default function Admin() {
                   <button onClick={createPair} className="btn-primary" style={{ width: '100%', height: 55 }}>REGISTRAR DUPLA</button>
                 </div>
               )}
+=======
+              {selectedC && <><label className="input-label">Nomes dos Atletas</label><input placeholder="Atleta 1" value={atleta1} onChange={e => setAtleta1(e.target.value)} /><input placeholder="Atleta 2" value={atleta2} onChange={e => setAtleta2(e.target.value)} /><button onClick={createPair} className="btn-primary" style={{ width: '100%', height: 55 }}>REGISTRAR DUPLA</button></>}
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
             </div>
           </div>
         )}
 
+<<<<<<< HEAD
         {activeTab === 'brackets' && (
           <div style={{ maxWidth: 800, margin: '0 auto', paddingBottom: 100 }}>
             <h1 className="section-title">Chaveamento do Torneio</h1>
@@ -1101,6 +1254,8 @@ export default function Admin() {
           </div>
         )}
 
+=======
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
         {activeTab === 'matches' && (
           <div style={{ maxWidth: 600, margin: '0 auto' }}>
             <h1 className="section-title">Agendar Jogos</h1>
@@ -1127,6 +1282,7 @@ export default function Admin() {
           </div>
         )}
 
+<<<<<<< HEAD
         {activeTab === 'import' && (
           <div style={{ maxWidth: 700, margin: '0 auto' }}>
             <h1 className="section-title">Importar / Exportar Excel</h1>
@@ -1269,6 +1425,8 @@ export default function Admin() {
             </div>
           </div>
         )}
+=======
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
 
 
         {/* Modal de Edição */}
@@ -1296,6 +1454,7 @@ export default function Admin() {
                 <input type="time" value={editTime} onChange={e => setEditTime(e.target.value)} />
               </div>
 
+<<<<<<< HEAD
               <div style={{ borderTop: '1px solid #333', marginTop: 20, paddingTop: 20 }}>
                 <label className="input-label">Resultado / Placar</label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 15, marginBottom: 15 }}>
@@ -1320,6 +1479,8 @@ export default function Admin() {
                 </select>
               </div>
 
+=======
+>>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
               <div style={{ display: 'grid', gap: 12, marginTop: 30 }}>
                 <button className="btn-primary" style={{ width: '100%', height: 60 }} onClick={saveEdit}>SALVAR ALTERAÇÕES</button>
                 <button className="btn-primary" style={{ width: '100%', height: 60, background: 'rgba(255,255,255,0.05)', color: '#888' }} onClick={() => setEditingMatch(null)}>VOLTAR / CANCELAR</button>
