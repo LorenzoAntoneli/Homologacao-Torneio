@@ -194,7 +194,7 @@ export default function PlayerPortal() {
       <header className="player-header">
         <img src={logo} alt="Logo" className="player-logo" />
         <div className="player-header-text">
-          <h1>CARECA'S BEACH CLUB</h1>
+          <h1>GO COMPLEXO ESPORTIVO</h1>
           <span className="player-subtitle">Portal do Jogador</span>
         </div>
       </header>
@@ -524,7 +524,7 @@ export default function PlayerPortal() {
 
       {/* Footer */}
       <footer className="player-footer">
-        <p>Atualização em tempo real • Careca's Beach Club © {new Date().getFullYear()}</p>
+        <p>Atualização em tempo real • GO Complexo Esportivo © {new Date().getFullYear()}</p>
       </footer>
     </div>
   );

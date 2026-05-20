@@ -327,9 +327,9 @@ export default function TVDisplay() {
       {/* HEADER CLÁSSICO (RESTAURADO) */}
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40, paddingBottom: 25, borderBottom: '1px solid rgba(212,175,55,0.2)', background: '#000', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 30 }}>
-          <img src={logo} alt="Logo" style={{ height: 160, objectFit: 'contain' }} />
+          <img src={logo} alt="Logo" style={{ height: 120, width: 120, borderRadius: '50%', border: '4px solid var(--accent-primary)', objectFit: 'cover', backgroundColor: '#fff', boxShadow: '0 0 30px rgba(212,175,55,0.3)' }} />
           <div>
-            <h1 style={{ fontSize: '3.2rem', fontWeight: 950, color: 'var(--accent-primary)', textTransform: 'uppercase', margin: 0, letterSpacing: 2 }}>CARECA’S BEACH CLUB</h1>
+            <h1 style={{ fontSize: '3.2rem', fontWeight: 950, color: 'var(--accent-primary)', textTransform: 'uppercase', margin: 0, letterSpacing: 2 }}>GO COMPLEXO ESPORTIVO</h1>
             <div style={{ display: 'flex', gap: 15, alignItems: 'center', marginTop: 5 }}>
               <span style={{ letterSpacing: 5, opacity: 0.5, fontSize: '0.8rem' }}>Torneio em Tempo Real</span>
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#2ecc71', boxShadow: '0 0 10px #2ecc71' }}></div>
@@ -610,7 +610,7 @@ export default function TVDisplay() {
           <div style={{ textAlign: 'center', padding: '0 40px' }}>
             {victory.isFinal ? (
               <>
-                <img src={logo} alt="Logo" style={{ height: 120, marginBottom: 30, animation: 'pulse 2s infinite' }} />
+                <img src={logo} alt="Logo" style={{ height: 120, width: 120, borderRadius: '50%', border: '3px solid var(--accent-primary)', objectFit: 'cover', backgroundColor: '#fff', boxShadow: '0 0 25px rgba(212,175,55,0.25)', marginBottom: 30, animation: 'pulse 2s infinite' }} />
                 <h3 style={{ fontSize: '1.8rem', color: 'var(--accent-primary)', letterSpacing: 10, fontWeight: 900, textTransform: 'uppercase', marginBottom: 10 }}>GRANDE CAMPEÃO</h3>
                 <h4 style={{ fontSize: '1.2rem', color: '#fff', opacity: 0.6, letterSpacing: 5, marginBottom: 30 }}>{victory.tournament.toUpperCase()} • {victory.category.toUpperCase()}</h4>
                 <div style={{ position: 'relative', display: 'inline-block' }}>
@@ -636,7 +636,7 @@ export default function TVDisplay() {
       {!audioEnabled && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: '#000', zIndex: 100000, display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', backdropFilter: 'blur(30px)' }}>
           <Trophy size={100} color="var(--accent-primary)" style={{ marginBottom: 30 }} />
-          <h2 style={{ color: '#fff', fontSize: '2rem', marginBottom: 40, letterSpacing: 5, fontWeight: 900 }}>CARECA’S BEACH CLUB</h2>
+          <h2 style={{ color: '#fff', fontSize: '2rem', marginBottom: 40, letterSpacing: 5, fontWeight: 900 }}>GO COMPLEXO ESPORTIVO</h2>
           <button className="btn-primary" style={{ padding: '35px 70px', fontSize: '1.8rem', fontWeight: 950, borderRadius: 100, display: 'flex', alignItems: 'center', gap: 20, boxShadow: '0 20px 50px rgba(212,175,55,0.3)' }} onClick={() => setAudioEnabled(true)}>
             <Star size={35} fill="currentColor" /> INICIAR PAINEL DA TV
           </button>

@@ -10,7 +10,7 @@ export default function Login() {
     <div className={styles.container}>
       {/* Remover borda do card de login para integrar a logo perfeitamente */}
       <div className={`app-card ${styles.card}`}>
-        <img src={logo} alt="Careca's Logo" className={styles.logo} />
+        <img src={logo} alt="GO Complexo Esportivo" className={styles.logo} />
         <h2 className={styles.title}>ACESSO RESTRITO</h2>
         <form onSubmit={handleLogin}>
           <input 
