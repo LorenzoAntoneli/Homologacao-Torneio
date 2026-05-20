@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAdmin } from '../context/AdminContext';
 import styles from './Sidebar.module.css';
-import logo from '../../assets/logo.jpg';
+import logo from '../../assets/logo-go.png';
 import { Swords, LogOut, Monitor, PlusCircle, UserPlus, Gamepad2, Settings, MapPin, LayoutList, Trash2, Pencil, Volume2, Network, FileSpreadsheet, Download, Upload, Smartphone } from 'lucide-react';
 
 export default function Sidebar() {

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from './supabase';
 import { Search, Trophy, Clock, MapPin, ChevronDown, ChevronUp, Star, Users, Swords, BarChart3, Medal, Filter } from 'lucide-react';
-import logo from './assets/logo.jpg';
+import logo from './assets/logo-go.png';
 
 export default function PlayerPortal() {
   const [searchName, setSearchName] = useState('');

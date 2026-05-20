@@ -10,7 +10,7 @@ import Brackets from './screens/Brackets';
 import Pairs from './screens/Pairs';
 import ImportExport from './screens/ImportExport';
 import Setup from './screens/Setup';
-import logo from '../assets/logo.jpg';
+import logo from '../assets/logo-go.png';
 
 function AdminContent() {
   const { session, activeTab } = useAdmin();

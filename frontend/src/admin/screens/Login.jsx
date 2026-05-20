@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAdmin } from '../context/AdminContext';
 import styles from './Login.module.css';
-import logo from '../../assets/logo.jpg';
+import logo from '../../assets/logo-go.png';
 
 export default function Login() {
   const { password, setPassword, handleLogin } = useAdmin();

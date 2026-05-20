@@ -1,22 +1,12 @@
-<<<<<<< HEAD
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { supabase } from './supabase';
-import { Trophy, Clock, MapPin, Star } from 'lucide-react';
-import logo from './assets/logo.jpg';
-
-export default function TVDisplay() {
-  const [matches, setMatches] = useState([]);
-  const [pairs, setPairs] = useState([]);
-  const [categories, setCategories] = useState([]);
-=======
-import { useEffect, useState } from 'react';
 import { supabase } from './supabase';
 import { Trophy, Clock, MapPin, Star } from 'lucide-react';
 import logo from './assets/logo-go.png';
 
 export default function TVDisplay() {
   const [matches, setMatches] = useState([]);
->>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
+  const [pairs, setPairs] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [victory, setVictory] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
   const [callingMatch, setCallingMatch] = useState(null);
@@ -27,48 +17,32 @@ export default function TVDisplay() {
   const [tvSettings, setTvSettings] = useState({ mode: 'auto', time: 30 });
   const [callQueue, setCallQueue] = useState([]);
   const [voiceKey, setVoiceKey] = useState(import.meta.env.VITE_VOICERSS_KEY || '');
-<<<<<<< HEAD
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
   const loadMatches = async (finishId = null) => {
     try {
       const { data: tData } = await supabase.from('tournaments').select('*');
-=======
-
-  const loadMatches = async (finishId = null) => {
-    try {
->>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
       const { data: cData } = await supabase.from('categories').select('*');
       const { data: pData } = await supabase.from('pairs').select('*');
       const { data: coData } = await supabase.from('courts').select('*');
       const { data: mData } = await supabase.from('matches').select('*').order('scheduled_time', { ascending: true });
 
-<<<<<<< HEAD
       const tournMap = {}; (tData || []).forEach(t => tournMap[t.id] = t);
-=======
->>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
       const catMap = {}; (cData || []).forEach(c => catMap[c.id] = c);
       const pairMap = {}; (pData || []).forEach(p => pairMap[p.id] = p);
       const courtMap = {}; (coData || []).forEach(c => courtMap[c.id] = c);
 
-<<<<<<< HEAD
       setPairs(pData || []);
       setCategories(cData || []);
 
-=======
->>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
       const formatted = (mData || []).map(m => ({
         ...m,
         pair1_name: pairMap[m.pair1_id]?.name || '?',
         pair2_name: pairMap[m.pair2_id]?.name || '?',
         winner_name: pairMap[m.winner_id]?.name || '?',
         category_name: catMap[m.category_id]?.name || 'Geral',
-<<<<<<< HEAD
         court_name: courtMap[m.court_id]?.name || 'A definir',
         tournament_name: tournMap[m.tournament_id]?.name || 'Torneio'
-=======
-        court_name: courtMap[m.court_id]?.name || 'A definir'
->>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
       }));
 
       setMatches(formatted);
@@ -79,19 +53,12 @@ export default function TVDisplay() {
           setVictory({
             winner: winningMatch.winner_name,
             category: winningMatch.category_name,
-<<<<<<< HEAD
             tournament: winningMatch.tournament_name,
             isFinal: winningMatch.stage === 'Final',
             score: `${winningMatch.pair1_games}/${winningMatch.pair2_games}` +
               (winningMatch.pair1_tiebreak || winningMatch.pair2_tiebreak ? ` (${winningMatch.pair1_tiebreak}-${winningMatch.pair2_tiebreak})` : '')
           });
           setTimeout(() => setVictory(null), winningMatch.stage === 'Final' ? 20000 : 12000);
-=======
-            score: `${winningMatch.pair1_games}/${winningMatch.pair2_games}` +
-              (winningMatch.pair1_tiebreak || winningMatch.pair2_tiebreak ? ` (${winningMatch.pair1_tiebreak}-${winningMatch.pair2_tiebreak})` : '')
-          });
-          setTimeout(() => setVictory(null), 12000);
->>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
         }
       }
     } catch (e) { console.error('Erro TV:', e); }
@@ -118,7 +85,6 @@ export default function TVDisplay() {
     }
   };
 
-<<<<<<< HEAD
   const syncData = (p) => {
     let finishId = null;
     if (p && p.payload && p.payload.isFinish) {
@@ -135,8 +101,6 @@ export default function TVDisplay() {
     }, 500);
   };
 
-=======
->>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
   useEffect(() => {
     loadMatches();
     loadSponsors();
@@ -146,7 +110,6 @@ export default function TVDisplay() {
       setCurrentTime(now);
     }, 10000);
 
-<<<<<<< HEAD
     const ch = supabase.channel('tv_rt')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, syncData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pairs' }, syncData)
@@ -171,43 +134,10 @@ export default function TVDisplay() {
         if (status === 'SUBSCRIBED') console.log('✅ TV conectada ao Realtime!');
         if (status === 'CHANNEL_ERROR') console.error('❌ Erro na conexão Realtime da TV. Verifique se o Realtime está ativo no Dashboard do Supabase.');
       });
-=======
-    const ch = supabase.channel('tv_rt').on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, () => {
-      // Carregamento simples passivo (pode não disparar confiavelmente se Replica Identity = default)
-      loadMatches();
-    }).on('postgres_changes', { event: '*', schema: 'public', table: 'sponsors' }, () => {
-      loadSponsors();
-    }).on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, (p) => {
-      if (p.new?.id === 'tv_settings') {
-        try {
-          const parsed = JSON.parse(p.new.value);
-          setTvSettings({ mode: parsed.mode || 'auto', time: parsed.time || 30 });
-        } catch(e) {}
-      }
-    }).on('broadcast', { event: 'tv_settings' }, (p) => {
-      if (p.payload) {
-        setTvSettings({ mode: p.payload.mode || 'auto', time: p.payload.time || 30 });
-      }
-    }).on('broadcast', { event: 'call_match' }, (p) => {
-      if (p.payload && p.payload.match) {
-        const m = p.payload.match;
-        setCallQueue(prev => [...prev, m]);
-      }
-    }).on('broadcast', { event: 'sync_data' }, () => {
-      loadMatches();
-      loadSponsors();
-    }).on('broadcast', { event: 'match_finished' }, (p) => {
-      if (p.payload && p.payload.matchId) {
-        loadMatches(p.payload.matchId);
-      }
-      loadSponsors();
-    }).subscribe();
->>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
 
     return () => { clearInterval(timer); supabase.removeChannel(ch); };
   }, []);
 
-<<<<<<< HEAD
   const activeMatches = matches.filter(m => m.status !== 'finished');
   const categoriesPresent = [...new Set(activeMatches.map(m => m.category_name))];
   const lastResults = matches
@@ -280,13 +210,10 @@ export default function TVDisplay() {
 
   const activeSlide = availableSlides[currentSlideIndex] || availableSlides[0];
 
-=======
->>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
   useEffect(() => {
     let slideTimer;
     if (tvSettings.mode === 'auto') {
       slideTimer = setInterval(() => {
-<<<<<<< HEAD
         setCurrentSlideIndex(prev => (prev + 1) % availableSlides.length);
       }, (tvSettings.time || 30) * 1000);
     } else {
@@ -310,15 +237,6 @@ export default function TVDisplay() {
     }
     return () => { if (slideTimer) clearInterval(slideTimer); };
   }, [tvSettings, availableSlides.length]);
-=======
-        setCurrentSlide(prev => (prev + 1) % 4);
-      }, (tvSettings.time || 30) * 1000);
-    } else {
-      setCurrentSlide(Number(tvSettings.mode));
-    }
-    return () => { if (slideTimer) clearInterval(slideTimer); };
-  }, [tvSettings]);
->>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
 
   // Pré-carregar vozes do sistema (necessário em alguns navegadores)
   useEffect(() => {
@@ -376,11 +294,7 @@ export default function TVDisplay() {
 
   // 1. COLETOR: Monitora partidas para o horário atual e adiciona na fila
   useEffect(() => {
-<<<<<<< HEAD
     const toQueue = matches.filter(m => m && m.status === 'pending' && m.scheduled_time?.startsWith(currentTime) && !calledIds.has(m.id));
-=======
-    const toQueue = matches.filter(m => m.status === 'pending' && m.scheduled_time && m.scheduled_time.startsWith(currentTime) && !calledIds.has(m.id));
->>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
     if (toQueue.length > 0) {
       setCallQueue(prev => [...prev, ...toQueue]);
       setCalledIds(prev => {
@@ -405,17 +319,7 @@ export default function TVDisplay() {
     }
   }, [callQueue, callingMatch, audioEnabled]);
 
-<<<<<<< HEAD
   const tvStandings = calculateTVStandings();
-=======
-  const activeMatches = matches.filter(m => m.status !== 'finished');
-  const categoriesPresent = [...new Set(activeMatches.map(m => m.category_name))];
-  const lastResults = matches
-    .filter(m => m.status === 'finished')
-    .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
-
-
->>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
 
   return (
     <div className="tv-container" style={{ background: '#000', height: '100vh', color: '#fff', padding: '40px 60px', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', fontFamily: 'system-ui, sans-serif' }}>
@@ -430,11 +334,7 @@ export default function TVDisplay() {
               <span style={{ letterSpacing: 5, opacity: 0.5, fontSize: '0.8rem' }}>Torneio em Tempo Real</span>
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#2ecc71', boxShadow: '0 0 10px #2ecc71' }}></div>
               <span style={{ fontSize: '0.6rem', opacity: 0.3, textTransform: 'uppercase' }}>
-<<<<<<< HEAD
                 {activeSlide.type === 'general' ? "Geral" : activeSlide.type === 'next' ? "Próximas" : activeSlide.type === 'results' ? "Resultados" : activeSlide.type === 'sponsors' ? "Patrocinadores" : activeSlide.type === 'bracket' ? "Chaveamento" : "Grupos"}
-=======
-                {currentSlide === 0 ? "Geral" : currentSlide === 1 ? "Próximas" : currentSlide === 2 ? "Resultados" : "Patrocinadores"}
->>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
               </span>
             </div>
           </div>
@@ -448,16 +348,11 @@ export default function TVDisplay() {
       <div style={{ position: 'relative', flex: 1, overflow: 'hidden', transition: 'opacity 2s ease-in-out', marginBottom: 30 }}>
 
         {/* SLIDE 0: PAINEL GERAL (A visão original) */}
-<<<<<<< HEAD
         {activeSlide.type === 'general' && (
-=======
-        {currentSlide === 0 && (
->>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
           <div className="fade-in" style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: 40 }}>
             <section>
               {categoriesPresent.map(cat => (
                 <div key={cat} style={{ marginBottom: 40 }}>
-<<<<<<< HEAD
                   <h2 style={{ color: 'var(--accent-primary)', fontSize: '1.2rem', textTransform: 'uppercase', letterSpacing: 4, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 15 }}>
                     <Star size={18} /> {cat}
                   </h2>
@@ -468,13 +363,6 @@ export default function TVDisplay() {
                           {m.stage && <div style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', fontWeight: 800, marginBottom: 5, letterSpacing: 2 }}>{m.stage.toUpperCase()}</div>}
                           <div style={{ fontSize: '2rem', fontWeight: 900 }}>{m.pair1_name} <span style={{ opacity: 0.2, fontSize: '1rem', margin: '0 10px' }}>VS</span> {m.pair2_name}</div>
                         </div>
-=======
-                  <h2 style={{ color: 'var(--accent-primary)', fontSize: '1.2rem', textTransform: 'uppercase', letterSpacing: 4, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 15 }}><Star size={18} /> {cat}</h2>
-                  <div style={{ display: 'grid', gap: 15 }}>
-                    {activeMatches.filter(m => m.category_name === cat).map(m => (
-                      <div key={m.id} className="glass-panel" style={{ padding: '25px 35px', borderRadius: 25, borderLeft: '10px solid var(--accent-primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ flex: 1 }}><div style={{ fontSize: '2rem', fontWeight: 900 }}>{m.pair1_name} <span style={{ opacity: 0.2, fontSize: '1rem', margin: '0 10px' }}>VS</span> {m.pair2_name}</div></div>
->>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
                         <div style={{ display: 'flex', gap: 30, alignItems: 'center' }}>
                           <div style={{ textAlign: 'center' }}><div style={{ fontSize: '0.7rem', opacity: 0.5, fontWeight: 900 }}>QUADRA</div><div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--accent-primary)' }}>{m.court_name}</div></div>
                           <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.05)', padding: '10px 15px', borderRadius: 12 }}><div style={{ fontSize: '0.7rem', opacity: 0.5, fontWeight: 900 }}>INÍCIO</div><div style={{ fontSize: '1.4rem', fontWeight: 900 }}>{m.scheduled_time ? m.scheduled_time.substring(0, 5) : '--:--'}</div></div>
@@ -491,14 +379,10 @@ export default function TVDisplay() {
               <div style={{ display: 'grid', gap: 15 }}>
                 {lastResults.slice(0, 8).map(m => (
                   <div key={m.id} className="glass-panel" style={{ padding: 20, borderRadius: 20, opacity: 0.7 }}>
-<<<<<<< HEAD
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', color: 'var(--accent-primary)', fontWeight: 900, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 2 }}>
                       <span>{m.category_name} {m.stage ? `• ${m.stage}` : ''}</span>
                       <span style={{ opacity: 0.5 }}>{new Date(m.updated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
-=======
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', color: 'var(--accent-primary)', fontWeight: 900, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 2 }}><span>{m.category_name}</span><span style={{ opacity: 0.5 }}>{new Date(m.updated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span></div>
->>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><span style={{ fontSize: '1rem', fontWeight: m.winner_id === m.pair1_id ? 900 : 400, color: m.winner_id === m.pair1_id ? '#fff' : '#888' }}>{m.pair1_name}</span><span style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--accent-primary)' }}>{m.pair1_games}</span></div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><span style={{ fontSize: '1rem', fontWeight: m.winner_id === m.pair2_id ? 900 : 400, color: m.winner_id === m.pair2_id ? '#fff' : '#888' }}>{m.pair2_name}</span><span style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--accent-primary)' }}>{m.pair2_games}</span></div>
@@ -511,23 +395,15 @@ export default function TVDisplay() {
         )}
 
         {/* SLIDE 1: PRÓXIMAS PARTIDAS (Foco macro) */}
-<<<<<<< HEAD
         {activeSlide.type === 'next' && (
-=======
-        {currentSlide === 1 && (
->>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
           <div className="fade-in">
             <h2 style={{ color: 'var(--accent-primary)', fontSize: '2rem', textTransform: 'uppercase', letterSpacing: 6, marginBottom: 40, textAlign: 'center' }}>• Próximas Partidas •</h2>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 25 }}>
               {activeMatches.length > 0 ? activeMatches.map(m => (
                 <div key={m.id} className="glass-panel" style={{ padding: '40px', borderRadius: 30, textAlign: 'center', border: '1px solid rgba(212,175,55,0.1)' }}>
-<<<<<<< HEAD
                   <div style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', fontWeight: 800, marginBottom: 15, textTransform: 'uppercase' }}>
                     {m.category_name} {m.stage ? `• ${m.stage}` : ''}
                   </div>
-=======
-                  <div style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', fontWeight: 800, marginBottom: 15, textTransform: 'uppercase' }}>{m.category_name}</div>
->>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
                   <div style={{ fontSize: '1.8rem', fontWeight: 900, marginBottom: 20 }}>{m.pair1_name} <br /><span style={{ opacity: 0.2, fontSize: '1rem' }}>VS</span><br /> {m.pair2_name}</div>
                   <div style={{ display: 'flex', justifyContent: 'center', gap: 40, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 20 }}>
                     <div><div style={{ fontSize: '0.6rem', opacity: 0.5 }}>QUADRA</div><div style={{ fontSize: '1.8rem', fontWeight: 950, color: 'var(--accent-primary)' }}>{m.court_name}</div></div>
@@ -540,23 +416,15 @@ export default function TVDisplay() {
         )}
 
         {/* SLIDE 2: MURAL DE RESULTADOS (Histórico Expandido) */}
-<<<<<<< HEAD
         {activeSlide.type === 'results' && (
-=======
-        {currentSlide === 2 && (
->>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
           <div className="fade-in">
             <h2 style={{ color: 'var(--accent-primary)', fontSize: '2rem', textTransform: 'uppercase', letterSpacing: 6, marginBottom: 40, textAlign: 'center' }}>• Mural de Resultados •</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
               {lastResults.length > 0 ? lastResults.slice(0, 16).map(m => (
                 <div key={m.id} className="glass-panel" style={{ padding: '25px', borderRadius: 20, opacity: 0.8 }}>
-<<<<<<< HEAD
                   <div style={{ fontSize: '0.6rem', color: 'var(--accent-primary)', fontWeight: 800, marginBottom: 15 }}>
                     {m.category_name} {m.stage ? `• ${m.stage}` : ''}
                   </div>
-=======
-                  <div style={{ fontSize: '0.6rem', color: 'var(--accent-primary)', fontWeight: 800, marginBottom: 15 }}>{m.category_name}</div>
->>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                     <span style={{ fontSize: '1.1rem', fontWeight: m.winner_id === m.pair1_id ? 900 : 400, color: m.winner_id === m.pair1_id ? '#fff' : '#666' }}>{m.pair1_name}</span>
                     <span style={{ fontSize: '1.5rem', fontWeight: 950, color: 'var(--accent-primary)' }}>{m.pair1_games}</span>
@@ -573,11 +441,7 @@ export default function TVDisplay() {
         )}
 
         {/* SLIDE 3: PATROCINADORES (Foco total nas marcas) */}
-<<<<<<< HEAD
         {activeSlide.type === 'sponsors' && (
-=======
-        {currentSlide === 3 && (
->>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
           <div className="fade-in" style={{ textAlign: 'center', height: '60vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <h2 style={{ color: 'var(--accent-primary)', fontSize: '2.5rem', textTransform: 'uppercase', letterSpacing: 10, marginBottom: 60 }}>• Nossos Patrocinadores •</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 60, padding: '0 100px', alignItems: 'center' }}>
@@ -591,7 +455,6 @@ export default function TVDisplay() {
           </div>
         )}
 
-<<<<<<< HEAD
         {/* SLIDE 4: CHAVEAMENTO VISUAL (Árvore Mata-Mata) */}
         {activeSlide.type === 'bracket' && (
           <div className="fade-in" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -710,8 +573,6 @@ export default function TVDisplay() {
             })()}
           </div>
         )}
-=======
->>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
 
       </div>
 
@@ -720,13 +581,9 @@ export default function TVDisplay() {
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: '#000', zIndex: 20000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <div style={{ textAlign: 'center', animation: 'pulse 1.5s infinite' }}>
             <Clock size={120} color="var(--accent-primary)" style={{ marginBottom: 30 }} />
-<<<<<<< HEAD
             <h2 style={{ fontSize: '2rem', letterSpacing: 10, opacity: 0.6 }}>
               {callingMatch.stage ? callingMatch.stage.toUpperCase() : 'CHAMADA DE JOGO'}
             </h2>
-=======
-            <h2 style={{ fontSize: '2rem', letterSpacing: 10, opacity: 0.6 }}>CHAMADA DE JOGO</h2>
->>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
             <h1 style={{ fontSize: '5rem', fontWeight: 950, margin: '20px 0', lineHeight: 1.1 }}>{callingMatch.pair1_name} <br /> <small style={{ fontSize: '2rem', opacity: 0.2 }}>X</small> <br /> {callingMatch.pair2_name}</h1>
             <div style={{ background: 'var(--accent-primary)', color: '#000', padding: '30px 60px', borderRadius: 30, fontSize: '3rem', fontWeight: 950, marginTop: 40 }}>
               DIRIJAM-SE À {callingMatch.court_name.toUpperCase()}
@@ -735,7 +592,6 @@ export default function TVDisplay() {
         </div>
       )}
 
-<<<<<<< HEAD
       {/* OVERLAY: Vitória Normal ou Grande Final */}
       {victory && (
         <div style={{ 
@@ -772,16 +628,6 @@ export default function TVDisplay() {
                 <div style={{ fontSize: '2.5rem', color: 'var(--accent-primary)', fontWeight: '900' }}>{victory.score} • VENCEU A PARTIDA! 🎾</div>
               </>
             )}
-=======
-      {/* OVERLAY: Vitória */}
-      {victory && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 21000, backdropFilter: 'blur(20px)' }}>
-          <div style={{ textAlign: 'center' }}>
-            <Trophy size={180} color="var(--accent-primary)" style={{ marginBottom: 30 }} />
-            <h3 style={{ fontSize: '1.5rem', color: '#fff', letterSpacing: 5, opacity: 0.6 }}>{victory.category.toUpperCase()}</h3>
-            <h1 style={{ fontSize: '7rem', fontWeight: 950, color: '#fff', margin: '20px 0' }}>{victory.winner}</h1>
-            <div style={{ fontSize: '2.5rem', color: 'var(--accent-primary)', fontWeight: '900' }}>{victory.score} • VENCEU A PARTIDA! 🏆🎾</div>
->>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
           </div>
         </div>
       )}
@@ -809,11 +655,8 @@ export default function TVDisplay() {
         .ticker-item { display: flex; align-items: center; gap: 15px; margin-right: 30px; background: rgba(255,255,255,0.95); padding: 10px 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(212,175,55,0.15); min-width: 220px; justify-content: center; height: 80px; }
         .ticker-item img { height: 100%; width: auto; max-width: 180px; object-fit: contain; }
         
-<<<<<<< HEAD
         @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
-=======
->>>>>>> 978f13a (feat: atualiza logo do sistema para logo-go.png)
         @keyframes scroll-ticker {
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }
