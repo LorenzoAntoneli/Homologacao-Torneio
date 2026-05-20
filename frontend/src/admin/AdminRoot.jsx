@@ -24,10 +24,10 @@ function AdminContent() {
       <Sidebar />
 
       <main className="content-area">
-        {/* LOGO MOBILE is already in Sidebar or rather, wait we didn't extract LOGO MOBILE. Let's put it here just in case. */}
-        <div className="mobile-admin-logo" style={{ display: 'flex', justifyContent: 'center', padding: '10px 0' }}>
-          <img src={logo} alt="Logo" style={{ width: 120, height: 'auto' }} />
+        <div className="mobile-admin-logo">
+          <img src={logo} alt="Logo" />
         </div>
+
 
         {activeTab === 'scoreboard' && <Scoreboard />}
         {activeTab === 'history' && <History />}

@@ -1,0 +1,4 @@
+# Ignorar scripts e utilitários locais da raiz
+/*.bat
+/*.js
+/*.txt

@@ -64,9 +64,10 @@ export default function PlayerView() {
   return (
     <div className="mobile-container">
       <header className="mobile-header" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <img src={logo} alt="Logo" style={{ height: 40, borderRadius: 8 }} />
+        <img src={logo} alt="Logo" style={{ height: 40, width: 40, borderRadius: '50%', border: '2px solid var(--accent-primary)', objectFit: 'cover', backgroundColor: '#fff', boxShadow: '0 0 10px rgba(212,175,55,0.2)' }} />
         <h1 style={{ margin: 0, fontSize: '1.2rem' }}>Careca's Club</h1>
       </header>
+
 
       <div className="mobile-search-bar">
         <div className="search-input-wrapper">
